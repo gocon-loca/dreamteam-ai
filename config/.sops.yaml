@@ -1,0 +1,8 @@
+# SOPS configuration for age encryption
+creation_rules:
+  - path_regex: secrets\.yaml$
+    age: >-
+      age1j9y2c02g2h6lqgkgyn9f68jqc8rhf9q6zrukemdwkr4flh3fs5qq0gt7m0
+  - path_regex: secrets\.enc\.yaml$
+    age: >-
+      age1j9y2c02g2h6lqgkgyn9f68jqc8rhf9q6zrukemdwkr4flh3fs5qq0gt7m0

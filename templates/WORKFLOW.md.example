@@ -1,0 +1,53 @@
+---
+rules:
+  - Always run `pnpm build` before marking complete
+  - Never modify migration files without explicit instruction
+  - Run existing tests with `pnpm test` and ensure they pass
+  - Do not add new dependencies without explicit approval
+
+failureModes:
+  - name: SCOPE_CREEP
+    description: Making changes outside the goal's specified scope
+    prevention: Only modify files directly relevant to the goal
+  - name: SILENT_FAILURE
+    description: Marking GOAL_COMPLETE without verifying the fix works
+    prevention: Always test your changes before completing
+  - name: BROKEN_IMPORTS
+    description: Adding imports that reference non-existent modules or paths
+    prevention: Verify all imports resolve correctly before completing
+  - name: MIGRATION_DRIFT
+    description: Changing database schema without a proper migration
+    prevention: Create a migration file for any schema change
+
+completionChecklist:
+  - Code compiles without errors
+  - Changes are committed with descriptive messages
+  - Related tests pass
+  - No unintended files modified
+  - Debrief includes VERIFIED section with concrete evidence
+
+contextFiles:
+  - DESIGN.md
+  - ARCHITECTURE.md
+
+setupCommands:
+  - pnpm install
+---
+
+## Additional Instructions
+
+Any markdown content below the front matter is appended to the agent's prompt
+as-is. Use this section for project-specific context that doesn't fit neatly
+into the structured fields above.
+
+### Project Conventions
+
+- All API routes follow RESTful naming: `/api/v1/<resource>`
+- Error responses use the `{ error: string, code: string }` format
+- Database queries go through the repository layer, never raw SQL in handlers
+
+### Known Gotchas
+
+- The dev server must be restarted after changing environment variables
+- Test fixtures in `tests/fixtures/` are shared across test files; do not
+  modify them without checking all consumers

@@ -1,0 +1,7 @@
+{
+  "status": "complete",
+  "summary": "Review 'concern' verdict is now blocking for user-reported and Jam-sourced goals. When goal.source is 'jam', 'jam:*', 'user-feedback', 'user', or 'feedback', a concern verdict re-queues the goal with the concern text as lastRejectionReason. Internal sources (system, pm-sweep, design-research) remain advisory-only.",
+  "filesModified": ["src/orchestration/goal-lifecycle.ts"],
+  "testsRun": "pnpm build — TypeScript compilation passes with zero errors",
+  "verified": "Reviewed implementation at lines 299-337 of goal-lifecycle.ts — all 5 user-facing source variants covered, advisory path for internal sources preserved, rejection sets status=pending + lastRejectionReason + recordLesson, gate1Span closed with reason:'user-facing-concern'"
+}

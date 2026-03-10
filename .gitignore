@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Secrets and keys - NEVER COMMIT THESE
+config/secrets.yaml
+config/secrets.dec.yaml
+config/secrets.enc.yaml
+config/age-key.txt
+config/keychain-password
+config/keys/
+*.pem
+*.key
+
+# MCP config (contains tokens)
+.mcp.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+
+# Docker volumes (local dev)
+.docker-data/
+
+# Runtime data (goals, state, debriefs, snapshots)
+data/
+
+# Runtime databases (may appear in project root)
+*.db
+*.db-shm
+*.db-wal
+
+# Process output
+nohup.out
+
+# Test results
+test-results/
+
+# Voicenotes plan (one-off)
+# One-off plan files
+
+# One-off scripts (contain project-specific goal IDs and data)
+scripts/test-*.ts
+scripts/create-*.ts
+scripts/*.mjs
+
+# Test build output
+dist-tests/
+# Vercel (setup UI deployment)
+.vercel
+vercel.json
+
+# Package manager store
+.pnpm-store/
+public/
+.dreamteam/
+config/product-briefs/
+config/projects.local.yaml
+# Project-specific e2e tests (generated per-project)
+tests/e2e/*/

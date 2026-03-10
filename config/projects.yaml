@@ -1,0 +1,34 @@
+# DreamTeam Project Registry
+# Defines all projects that can be orchestrated
+#
+# Copy this file to projects.local.yaml and customize for your setup.
+# projects.local.yaml is gitignored and takes priority over this file.
+
+projects:
+  # Example TypeScript web app
+  my-web-app:
+    path: ~/projects/my-web-app
+    description: "My TypeScript web application"
+    hasDevServer: true
+    devCommand: "npm run dev"
+    devPort: 3000
+    healthCheck: "http://localhost:3000"
+    testAuth:
+      email: "test@example.com"
+      password: "test-password"
+      loginPath: "/login"
+
+  # Example Python API
+  my-api:
+    path: ~/projects/my-api
+    description: "Python FastAPI backend"
+    hasDevServer: true
+    devCommand: "python3 -m uvicorn main:app --host 0.0.0.0 --port 3001 --reload"
+    devPort: 3001
+    healthCheck: "http://localhost:3001"
+
+  # Example project without dev server (CLI tool, library, etc.)
+  my-cli-tool:
+    path: ~/projects/my-cli-tool
+    description: "Command-line utility"
+    hasDevServer: false

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Service identifier -->
+    <key>Label</key>
+    <string>com.dreamteam.keepalive</string>
+
+    <!-- Program to run — UPDATE THIS PATH to your DreamTeam install -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__DREAMTEAM_PATH__/scripts/keepalive.sh</string>
+    </array>
+
+    <!-- Start immediately when loaded -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Restart if it exits (the keepalive script should never exit) -->
+    <key>KeepAlive</key>
+    <dict>
+        <!-- Restart if it crashes -->
+        <key>SuccessfulExit</key>
+        <false/>
+        <!-- But allow manual stop -->
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <!-- Wait 10 seconds before restarting after crash -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <!-- Working directory — UPDATE THIS PATH -->
+    <key>WorkingDirectory</key>
+    <string>__DREAMTEAM_PATH__</string>
+
+    <!-- Environment — UPDATE THESE PATHS for your system -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <!-- Log output -->
+    <key>StandardOutPath</key>
+    <string>/tmp/dreamteam-keepalive-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/dreamteam-keepalive-stderr.log</string>
+
+    <!-- Don't limit CPU usage -->
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <!-- Start in user session after login -->
+    <key>LimitLoadToSessionType</key>
+    <array>
+        <string>Aqua</string>
+        <string>Background</string>
+        <string>StandardIO</string>
+    </array>
+</dict>
+</plist>

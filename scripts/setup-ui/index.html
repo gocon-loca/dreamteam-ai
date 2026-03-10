@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DreamTeam Setup Wizard</title>
+  <style>
+    /* ── Reset & Base ────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-input: #0d1117;
+      --bg-hover: #1c2129;
+      --border: #30363d;
+      --border-focus: #58a6ff;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-dim: #484f58;
+      --accent: #58a6ff;
+      --accent-hover: #79b8ff;
+      --success: #3fb950;
+      --error: #f85149;
+      --warning: #d29922;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+      --radius: 8px;
+      --radius-sm: 4px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ──────────────────────────────────────── */
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 24px 80px;
+    }
+
+    .header {
+      text-align: center;
+      padding: 40px 0 24px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .header h1 span {
+      color: var(--accent);
+    }
+
+    .header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    /* ── Progress Bar ────────────────────────────────── */
+    .progress-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 32px auto 40px;
+      max-width: 720px;
+    }
+
+    .progress-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
+    .progress-step:hover .progress-circle {
+      border-color: var(--accent);
+      transition: border-color 0.15s ease;
+    }
+
+    .progress-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .progress-step.active .progress-circle {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+
+    .progress-step.completed .progress-circle {
+      border-color: var(--success);
+      background: var(--success);
+      color: #fff;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      white-space: nowrap;
+      transition: color 0.3s ease;
+    }
+
+    .progress-step.active .progress-label {
+      color: var(--accent);
+    }
+
+    .progress-step.completed .progress-label {
+      color: var(--success);
+    }
+
+    .progress-line {
+      width: 48px;
+      height: 2px;
+      background: var(--border);
+      margin-bottom: 20px;
+      transition: background 0.3s ease;
+    }
+
+    .progress-line.filled {
+      background: var(--success);
+    }
+
+    /* ── Step Cards ───────────────────────────────────── */
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .step-card.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    /* ── Navigation Buttons ──────────────────────────── */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-hover);
+      border-color: var(--text-muted);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #46c258;
+      border-color: #46c258;
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 13px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+
+    /* ── Form Elements ───────────────────────────────── */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font-sans);
+      transition: border-color 0.15s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .form-input.mono {
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ── Check List ──────────────────────────────────── */
+    .check-list {
+      list-style: none;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      transition: border-color 0.2s ease;
+    }
+
+    .check-item.pass {
+      border-color: rgba(63, 185, 80, 0.3);
+    }
+
+    .check-item.fail {
+      border-color: rgba(248, 81, 73, 0.3);
+    }
+
+    .check-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .check-icon.pass {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--success);
+    }
+
+    .check-icon.fail {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--error);
+    }
+
+    .check-icon.loading {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+    }
+
+    .check-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .check-detail {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-left: auto;
+      font-family: var(--font-mono);
+    }
+
+    .check-help {
+      font-size: 12px;
+      color: var(--error);
+      margin-top: 4px;
+    }
+
+    .check-help a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .check-help a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Spinner ──────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .spinner-sm {
+      width: 12px;
+      height: 12px;
+      border-width: 1.5px;
+    }
+
+    /* ── Preset Buttons ──────────────────────────────── */
+    .preset-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .preset-btn {
+      padding: 12px 24px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex: 1;
+      text-align: center;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--text-muted);
+    }
+
+    .preset-btn.selected {
+      border-color: var(--accent);
+      background: rgba(88, 166, 255, 0.08);
+      color: var(--accent);
+    }
+
+    /* ── Model Columns ───────────────────────────────── */
+    .model-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .model-col {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .model-col-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .model-col-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .tier-primary .model-col-title { color: var(--error); }
+    .tier-secondary .model-col-title { color: var(--warning); }
+    .tier-ancillary .model-col-title { color: var(--success); }
+
+    /* ── Ladder Visual ───────────────────────────────── */
+    .ladder-section {
+      margin-bottom: 24px;
+    }
+
+    .ladder-section h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+    }
+
+    .ladders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .ladder-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .ladder-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .ladder-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ladder-node {
+      padding: 6px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      text-align: center;
+      width: 100%;
+    }
+
+    .ladder-node.tier-ancillary {
+      background: rgba(63, 185, 80, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(63, 185, 80, 0.25);
+    }
+
+    .ladder-node.tier-secondary {
+      background: rgba(210, 153, 34, 0.12);
+      color: var(--warning);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+    }
+
+    .ladder-node.tier-primary {
+      background: rgba(248, 81, 73, 0.12);
+      color: var(--error);
+      border: 1px solid rgba(248, 81, 73, 0.25);
+    }
+
+    .ladder-arrow {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* ── Test Result ──────────────────────────────────── */
+    .test-result {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: none;
+    }
+
+    .test-result.visible {
+      display: block;
+    }
+
+    .test-result.success {
+      background: rgba(63, 185, 80, 0.1);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      color: var(--success);
+    }
+
+    .test-result.error {
+      background: rgba(248, 81, 73, 0.1);
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      color: var(--error);
+    }
+
+    .test-result pre {
+      margin-top: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text-muted);
+    }
+
+    /* ── Telegram Instructions ────────────────────────── */
+    .instructions {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .instructions code {
+      background: rgba(88, 166, 255, 0.1);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .bot-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(63, 185, 80, 0.08);
+      border: 1px solid rgba(63, 185, 80, 0.25);
+      border-radius: var(--radius-sm);
+      margin-top: 12px;
+      display: none;
+    }
+
+    .bot-info.visible {
+      display: flex;
+    }
+
+    .bot-info-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(63, 185, 80, 0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--success);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .bot-info-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .bot-info-username {
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Projects Table ──────────────────────────────── */
+    .projects-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+
+    .projects-table th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .projects-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .projects-table .form-input {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .projects-table .row-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .toggle-switch input {
+      display: none;
+    }
+
+    .toggle-slider {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .toggle-slider::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s ease;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--success);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::after {
+      transform: translateX(20px);
+    }
+
+    .toggle-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      min-width: 24px;
+    }
+
+    .toggle-switch input:checked ~ .toggle-label {
+      color: var(--success);
+    }
+
+    .remove-row-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+      line-height: 1;
+      border-radius: 3px;
+      transition: all 0.15s ease;
+    }
+
+    .remove-row-btn:hover {
+      color: var(--error);
+      background: rgba(248, 81, 73, 0.1);
+    }
+
+    /* ── Integration Row ─────────────────────────────── */
+    .integration-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+    }
+
+    .integration-info {
+      flex: 1;
+    }
+
+    .integration-name {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .integration-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .integration-input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .integration-input .form-input {
+      max-width: 400px;
+    }
+
+    .skip-label {
+      font-size: 13px;
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .skip-label input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    /* ── Code Block (Review) ─────────────────────────── */
+    .config-preview {
+      margin-bottom: 20px;
+    }
+
+    .config-preview-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-preview-label .filepath {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 400;
+    }
+
+    .code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      overflow-x: auto;
+      white-space: pre;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    /* ── Success Panel ───────────────────────────────── */
+    .success-panel {
+      text-align: center;
+      padding: 40px 20px;
+      display: none;
+    }
+
+    .success-panel.visible {
+      display: block;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px;
+    }
+
+    .success-panel h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .success-panel p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .success-panel code {
+      background: rgba(88, 166, 255, 0.1);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    .success-actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    /* ── Inline Error ────────────────────────────────── */
+    .inline-error {
+      color: var(--error);
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .inline-error.visible {
+      display: block;
+    }
+
+    /* ── Note box ────────────────────────────────────── */
+    .note-box {
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--warning);
+      margin-top: 12px;
+    }
+
+    /* ── Tooltip ──────────────────────────────────────── */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 260px;
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      position: absolute;
+      z-index: 10;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      line-height: 1.5;
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+    }
+
+    .tooltip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--text-dim);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* ── Preflight Table ─────────────────────────────── */
+    .preflight-results {
+      margin-top: 20px;
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      .model-grid, .ladders-grid {
+        grid-template-columns: 1fr;
+      }
+      .preset-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <h1><span>DreamTeam</span> Setup</h1>
+      <p>Configure your autonomous coding system in a few steps.</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 1: Welcome — What is DreamTeam?                -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card active" id="step-1" data-step="1">
+      <h2 class="step-title">Welcome to DreamTeam</h2>
+      <p class="step-subtitle" style="font-size:16px;max-width:700px;margin:0 auto 8px">
+        An autonomous coding system you control on the go from your phone.
+      </p>
+      <p style="font-size:14px;color:var(--text-muted);max-width:700px;margin:0 auto 24px;text-align:center">
+        Describe what you want built in Telegram. AI agents work on your projects around the clock &mdash;
+        writing code, running tests, reviewing their own work, and merging to main. You approve or reject from your phone.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--accent)">What it does</div>
+          <ul style="list-style:none;padding:0;font-size:14px;color:var(--text-muted);line-height:2">
+            <li>Describe what you want built &mdash; from your laptop or phone</li>
+            <li>DreamTeam structures your ideas into goals for AI agents</li>
+            <li>Agents write code, run tests, and review their own work</li>
+            <li>4-stage quality gates catch broken work before merge</li>
+            <li>Auto-merges, pushes, and notifies you on completion</li>
+            <li>Manages multiple projects in parallel, 24/7</li>
+          </ul>
+        </div>
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--accent)">How it works</div>
+          <ul style="list-style:none;padding:0;font-size:14px;color:var(--text-muted);line-height:2">
+            <li>Use Claude Code on your laptop, or Telegram on the go</li>
+            <li>A Director (AI) turns your ideas into structured goals</li>
+            <li>3-tier model ladder (cheap &rarr; powerful) with auto-escalation</li>
+            <li>Supervisor dispatches goals to parallel workers</li>
+            <li>Code review, smoke tests, and merge gates</li>
+            <li>Morning digests, cost tracking, and analytics</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Where to Run -->
+      <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:24px">
+        <div style="font-weight:600;margin-bottom:12px;color:var(--accent)">Where to run it</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+          DreamTeam is an always-on system &mdash; it keeps working while you're away. Choose where to host it based on your needs:
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--success)">Your Laptop</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Easiest way to try it out. Works great while your computer is on.
+              <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:11px">
+                <strong style="color:var(--warning)">Keep-awake tip:</strong> On macOS, run <code style="color:var(--accent)">caffeinate -s</code> in a terminal to prevent sleep. On Linux, use <code style="color:var(--accent)">systemd-inhibit</code>. Close the lid and agents keep running.
+              </div>
+              <div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Good for trying it out. Not ideal for overnight or multi-day runs.</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--accent)">Home Server / Mac Mini</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Always on, no monthly fees. Use <a href="https://tailscale.com" target="_blank" style="color:var(--accent)">Tailscale</a> to access from anywhere &mdash; your phone connects to the server over a private mesh network, no port forwarding needed.
+              <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:11px">
+                <strong style="color:var(--accent)">Setup:</strong> Install Tailscale on both your server and phone. SSH in from anywhere. Telegram bot works globally via the internet &mdash; no tunneling required for that.
+              </div>
+              <div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Recommended for individual developers. ~$600 one-time for a Mac Mini.</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--accent)">Cloud VPS</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Run on a cloud server (Hetzner, DigitalOcean, AWS, etc). Most reliable uptime. Use Docker or install directly.
+              <div style="margin-top:8px;padding:8px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:11px">
+                <strong style="color:var(--accent)">Requirements:</strong> 2+ CPU cores, 4GB+ RAM, Node 22, Git. A $20-40/mo VPS handles 3 concurrent workers easily.
+              </div>
+              <div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Best for teams or always-on reliability. Dockerfile coming soon.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Architecture -->
+      <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:24px">
+        <div style="font-weight:600;margin-bottom:8px;color:var(--accent)">Architecture</div>
+        <pre style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);line-height:1.6;overflow-x:auto;margin:0">Your Computer (Claude Code)    Phone (Telegram)
+         \                          /
+          v                        v
+           +--- Director (AI) ---+
+                    |
+                    v
+              Supervisor  &rarr;  Quality Gates (validate, test, review, smoke)
+                    |
+                    +&rarr;  Worker 1  &rarr;  Claude Agent  &rarr;  git branch + merge
+                    +&rarr;  Worker 2  &rarr;  Claude Agent  &rarr;  git branch + merge
+                    +&rarr;  Worker 3  &rarr;  Claude Agent  &rarr;  git branch + merge</pre>
+      </div>
+
+      <div class="nav-buttons">
+        <div></div>
+        <button class="btn btn-primary" onclick="goToStep(2)">
+          Get Started <span style="margin-left:2px">&#8594;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 2: Prerequisites                               -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-2" data-step="2">
+      <h2 class="step-title">Prerequisites</h2>
+      <p class="step-subtitle">Checking that your environment has everything needed. Click install buttons for any missing dependencies.</p>
+
+      <ul class="check-list" id="prereqList">
+        <!-- Filled by JS -->
+      </ul>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(1)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" id="btn-next-2" disabled onclick="goToStep(3)">
+          Next <span style="margin-left:2px">&#8594;</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 3: AI Provider & Models                        -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-3" data-step="3">
+      <h2 class="step-title">AI Provider &amp; Models</h2>
+      <p class="step-subtitle">Choose your AI provider and configure the 3-tier model hierarchy.</p>
+
+      <div class="note-box" style="margin-bottom:20px;border-color:var(--accent);background:rgba(88,166,255,0.05)">
+        <strong>Using your existing plan:</strong> If you have a Claude Pro or Max subscription, just run <code style="background:var(--bg);padding:2px 6px;border-radius:3px">claude login</code> after setup &mdash; no API key needed. DreamTeam works with your plan's included usage. You can also use an API key from <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> for pay-as-you-go.
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="form-group">
+        <label class="form-label">Quick Presets</label>
+        <div class="preset-group">
+          <button class="preset-btn selected" data-preset="claude" onclick="selectPreset('claude')">All Claude</button>
+          <button class="preset-btn" data-preset="openai" onclick="selectPreset('openai')">All OpenAI</button>
+          <button class="preset-btn" data-preset="mixed" onclick="selectPreset('mixed')">Mixed (Claude + OpenAI)</button>
+          <button class="preset-btn" data-preset="custom" onclick="selectPreset('custom')">Custom</button>
+        </div>
+        <p class="form-hint">Presets fill in defaults — you can change any individual model below.</p>
+      </div>
+
+      <!-- CLI Command (advanced — hidden by default) -->
+      <div class="form-group">
+        <label class="form-label" style="cursor:pointer;user-select:none" onclick="document.getElementById('cliAdvanced').style.display = document.getElementById('cliAdvanced').style.display === 'none' ? 'block' : 'none'">
+          Advanced <span style="color:var(--text-muted);font-size:12px">&#9660;</span>
+        </label>
+        <div id="cliAdvanced" style="display:none">
+          <input type="text" class="form-input mono" id="cliCommand" value="claude" placeholder="claude">
+          <p class="form-hint">CLI binary for running agents. Default: <code style="color:var(--accent)">claude</code>. Only change this if you use a custom CLI wrapper.</p>
+        </div>
+      </div>
+
+      <!-- Model Tiers -->
+      <div class="model-grid">
+        <div class="model-col tier-primary">
+          <div class="model-col-title">Primary</div>
+          <div class="model-col-desc">Most capable. Complex goals, auth work, final escalation.</div>
+          <div class="form-group">
+            <label class="form-label">Provider</label>
+            <select class="form-input" id="providerPrimary" onchange="onProviderChange('Primary')">
+              <option value="claude">Claude</option>
+              <option value="openai">OpenAI</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Model Name</label>
+            <input type="text" class="form-input mono" id="modelPrimary" value="claude-opus-4-6" placeholder="claude-opus-4-6" oninput="updateLadders()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Est. Cost ($/run)</label>
+            <input type="number" class="form-input" id="costPrimary" value="0.79" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="model-col tier-secondary">
+          <div class="model-col-title">Secondary</div>
+          <div class="model-col-desc">Balanced. Retries, code review, AI triage.</div>
+          <div class="form-group">
+            <label class="form-label">Provider</label>
+            <select class="form-input" id="providerSecondary" onchange="onProviderChange('Secondary')">
+              <option value="claude">Claude</option>
+              <option value="openai">OpenAI</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Model Name</label>
+            <input type="text" class="form-input mono" id="modelSecondary" value="claude-sonnet-4-6" placeholder="claude-sonnet-4-6" oninput="updateLadders()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Est. Cost ($/run)</label>
+            <input type="number" class="form-input" id="costSecondary" value="0.25" step="0.01" min="0">
+          </div>
+        </div>
+
+        <div class="model-col tier-ancillary">
+          <div class="model-col-title">Ancillary</div>
+          <div class="model-col-desc">Cheapest/fastest. Routine goals, first attempts.</div>
+          <div class="form-group">
+            <label class="form-label">Provider</label>
+            <select class="form-input" id="providerAncillary" onchange="onProviderChange('Ancillary')">
+              <option value="claude">Claude</option>
+              <option value="openai">OpenAI</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Model Name</label>
+            <input type="text" class="form-input mono" id="modelAncillary" value="claude-haiku-4-5-20251001" placeholder="claude-haiku-4-5-20251001" oninput="updateLadders()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Est. Cost ($/run)</label>
+            <input type="number" class="form-input" id="costAncillary" value="0.05" step="0.01" min="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- Escalation Ladders -->
+      <div class="ladder-section">
+        <h3>Escalation Ladders</h3>
+        <div class="ladders-grid">
+          <div class="ladder-card">
+            <h4>Routine</h4>
+            <div class="ladder-flow" id="ladderRoutine">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+          <div class="ladder-card">
+            <h4>Complex</h4>
+            <div class="ladder-flow" id="ladderComplex">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+          <div class="ladder-card">
+            <h4>Auth / Security</h4>
+            <div class="ladder-flow" id="ladderAuth">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Test Button (only shown when running locally) -->
+      <div id="testCliSection" style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-sm" id="testCliBtn" onclick="testCli()">Verify CLI Connection</button>
+        <span style="font-size:12px;color:var(--text-dim)">Sends a test prompt to confirm your CLI and API key work</span>
+        <span id="testCliSpinner" style="display:none"><span class="spinner spinner-sm"></span></span>
+      </div>
+      <div class="test-result" id="testCliResult"></div>
+
+      <div id="openaiNote" class="note-box" style="display:none">
+        OpenAI models require an <code style="color:var(--warning)">OPENAI_API_KEY</code> in your <code>.env</code> file. The Claude CLI supports OpenAI models via <code>--model</code> flag when the API key is set.
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(1)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(4)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 4: Telegram Bot                                -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-4" data-step="4">
+      <h2 class="step-title">Telegram Bot</h2>
+      <p class="step-subtitle">Connect a Telegram bot for remote control and notifications.</p>
+
+      <div class="instructions">
+        <ol>
+          <li>Open Telegram and search for <code>@BotFather</code></li>
+          <li>Send <code>/newbot</code> and follow the prompts to create a bot</li>
+          <li>Copy the bot token (looks like <code>123456:ABC-DEF1234...</code>)</li>
+          <li>Paste it below and test the connection</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Bot Token</label>
+        <div style="display:flex;gap:10px">
+          <input type="text" class="form-input mono" id="telegramToken" placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxyz">
+          <button class="btn btn-sm" id="testTelegramBtn" onclick="testTelegram()">Test Connection</button>
+          <span id="testTelegramSpinner" style="display:none"><span class="spinner spinner-sm"></span></span>
+        </div>
+      </div>
+
+      <div class="bot-info" id="botInfo">
+        <div class="bot-info-icon">&#10003;</div>
+        <div>
+          <div class="bot-info-name" id="botName"></div>
+          <div class="bot-info-username" id="botUsername"></div>
+        </div>
+      </div>
+
+      <div class="test-result" id="testTelegramResult"></div>
+
+      <div class="form-group" style="margin-top:24px">
+        <label class="form-label">Your Telegram User ID</label>
+        <input type="text" class="form-input mono" id="telegramChatId" placeholder="123456789" style="max-width:300px">
+        <p class="form-hint">Send any message to your bot, then use a bot like <code>@userinfobot</code> to find your numeric user ID. This restricts who can control DreamTeam.</p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(3)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(5)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 5: Projects                                    -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-5" data-step="5">
+      <h2 class="step-title">Projects</h2>
+      <p class="step-subtitle">Register the projects DreamTeam will manage. DreamTeam itself is always included.</p>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);line-height:1.6">
+        <strong>Dev Server</strong> &mdash; Toggle this on if the project has a local dev server (e.g., <code>npm run dev</code>, <code>python manage.py runserver</code>). DreamTeam will auto-start it and run Playwright smoke tests against it to verify agent work. Leave it off for CLI tools, libraries, or backend-only projects.
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="projects-table" id="projectsTable">
+          <thead>
+            <tr>
+              <th style="width:130px">Name</th>
+              <th style="width:240px">Path</th>
+              <th style="width:60px">Dev Server</th>
+              <th style="width:180px">Dev Command</th>
+              <th style="width:70px">Port</th>
+              <th style="width:110px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="projectsBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-sm btn-outline" onclick="addProjectRow()">+ Add Project</button>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(4)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(6)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 6: Integrations                                -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-6" data-step="6">
+      <h2 class="step-title">Integrations</h2>
+      <p class="step-subtitle">These are optional but recommended. They give DreamTeam superpowers. You can add them later too.</p>
+
+      <!-- Jam.dev -->
+      <div class="integration-row" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="integration-name" style="font-size:16px">Jam.dev</div>
+          <label class="skip-label">
+            <input type="checkbox" id="skipJam" checked onchange="toggleIntegration('jam')"> Skip
+          </label>
+        </div>
+
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--accent);font-size:13px">What is Jam?</div>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+            <a href="https://jam.dev" target="_blank" style="color:var(--accent)">Jam.dev</a> is a browser extension that captures bugs as shareable links — including console logs, network requests, screenshots, and video replay. When connected, DreamTeam agents can:
+          </p>
+          <ul style="list-style:none;padding:0;font-size:13px;color:var(--text-muted);line-height:2">
+            <li>Read bug reports to understand what went wrong</li>
+            <li>Watch video replays of user-reported issues</li>
+            <li>Inspect console errors and failed network requests</li>
+            <li>Auto-create goals from Jam reports and fix bugs autonomously</li>
+          </ul>
+          <div style="font-weight:600;margin:12px 0 8px;color:var(--accent);font-size:13px">Setup Steps</div>
+          <ol style="padding-left:20px;font-size:13px;color:var(--text-muted);line-height:2">
+            <li>Install the <a href="https://chrome.google.com/webstore/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" style="color:var(--accent)">Jam browser extension</a></li>
+            <li>Go to <a href="https://jam.dev/account/api" target="_blank" style="color:var(--accent)">jam.dev/account/api</a> and create an API key</li>
+            <li>Paste the key below</li>
+          </ol>
+        </div>
+
+        <div class="integration-input">
+          <input type="text" class="form-input mono" id="jamApiKey" placeholder="jam_api_key_..." disabled>
+        </div>
+      </div>
+
+      <!-- Linear -->
+      <div class="integration-row" style="flex-direction:column;align-items:stretch;margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="integration-name" style="font-size:16px">Linear</div>
+          <label class="skip-label">
+            <input type="checkbox" id="skipLinear" checked onchange="toggleIntegration('linear')"> Skip
+          </label>
+        </div>
+
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+          <div style="font-weight:600;margin-bottom:8px;color:var(--accent);font-size:13px">What is Linear?</div>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px">
+            <a href="https://linear.app" target="_blank" style="color:var(--accent)">Linear</a> is a project management tool with a kanban board. When connected, DreamTeam syncs goals bidirectionally:
+          </p>
+          <ul style="list-style:none;padding:0;font-size:13px;color:var(--text-muted);line-height:2">
+            <li>Goals appear as Linear issues on your board</li>
+            <li>Status changes sync both ways (pending &harr; in progress &harr; done)</li>
+            <li>Track agent work alongside your human team's work</li>
+            <li>Use Linear's filters, labels, and views to manage goals</li>
+          </ul>
+          <div style="font-weight:600;margin:12px 0 8px;color:var(--accent);font-size:13px">Setup Steps</div>
+          <ol style="padding-left:20px;font-size:13px;color:var(--text-muted);line-height:2">
+            <li>Go to <a href="https://linear.app/settings/api" target="_blank" style="color:var(--accent)">linear.app/settings/api</a></li>
+            <li>Create a Personal API key</li>
+            <li>Paste the key below</li>
+          </ol>
+        </div>
+
+        <div class="integration-input">
+          <input type="text" class="form-input mono" id="linearApiKey" placeholder="lin_api_..." disabled>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(5)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(7)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 7: Review & Launch                             -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-7" data-step="7">
+      <h2 class="step-title">Review &amp; Save</h2>
+      <p class="step-subtitle">Review the generated configuration files before saving.</p>
+
+      <div id="reviewContent">
+        <!-- config/models.yaml -->
+        <div class="config-preview">
+          <div class="config-preview-label">
+            <span class="filepath">config/models.yaml</span>
+          </div>
+          <div class="code-block" id="previewModels"></div>
+        </div>
+
+        <!-- config/projects.yaml -->
+        <div class="config-preview">
+          <div class="config-preview-label">
+            <span class="filepath">config/projects.yaml</span>
+          </div>
+          <div class="code-block" id="previewProjects"></div>
+        </div>
+
+        <!-- .env -->
+        <div class="config-preview">
+          <div class="config-preview-label">
+            <span class="filepath">.env</span>
+          </div>
+          <div class="code-block" id="previewEnv"></div>
+        </div>
+      </div>
+
+      <div class="inline-error" id="saveError"></div>
+
+      <div id="saveActions">
+        <div class="nav-buttons">
+          <button class="btn" onclick="goToStep(6)"><span style="margin-right:2px">&#8592;</span> Back</button>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span id="saveSpinner" style="display:none"><span class="spinner"></span></span>
+            <button class="btn btn-success" id="saveBtn" onclick="saveConfig()">Save Configuration</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success Panel (shown after save) -->
+      <div class="success-panel" id="successPanel">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:48px;margin-bottom:8px">&#x2705;</div>
+          <h2 style="color:var(--success);margin-bottom:4px">Configuration Saved!</h2>
+          <p style="color:var(--text-muted)">Your DreamTeam config files have been written.</p>
+        </div>
+
+        <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px">
+          <div style="font-weight:600;margin-bottom:12px;color:var(--accent)">Next Steps</div>
+          <ol style="list-style:decimal;padding-left:20px;font-size:14px;color:var(--text-muted);line-height:2.2">
+            <li>Authenticate the Claude CLI: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">claude login</code></li>
+            <li>Build the project: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">pnpm build</code></li>
+            <li>Start the system: <code style="background:var(--bg);padding:2px 6px;border-radius:3px">bash scripts/start.sh</code></li>
+            <li>Add your first goal:
+              <div style="margin-top:4px">
+                <code style="background:var(--bg);padding:4px 8px;border-radius:3px;display:inline-block">pnpm goal add myproject "Build the login page"</code>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div style="background:rgba(88,166,255,0.08);border:1px solid rgba(88,166,255,0.2);border-radius:var(--radius);padding:16px;font-size:13px;color:var(--text-muted);line-height:1.6">
+          <strong style="color:var(--accent)">Tip:</strong> If you configured Telegram, message your bot to start sending goals from your phone.
+          Without Telegram, use the CLI: <code>pnpm goal add &lt;project&gt; "description"</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // State
+    // ═══════════════════════════════════════════════════════
+
+    const STEPS = [
+      { id: 1, label: 'Welcome' },
+      { id: 2, label: 'Install' },
+      { id: 3, label: 'Models' },
+      { id: 4, label: 'Telegram' },
+      { id: 5, label: 'Projects' },
+      { id: 6, label: 'Integrations' },
+      { id: 7, label: 'Review' },
+    ];
+
+    let currentStep = 1;
+    let completedSteps = new Set();
+    let projectIdCounter = 0;
+    let telegramVerified = false;
+
+    const state = {
+      models: {
+        preset: 'claude',
+        cliCommand: 'claude',
+        primary: 'opus',
+        secondary: 'sonnet',
+        ancillary: 'haiku',
+        costPrimary: 0.79,
+        costSecondary: 0.25,
+        costAncillary: 0.05,
+      },
+      telegram: {
+        token: '',
+        chatId: '',
+        botName: '',
+        botUsername: '',
+      },
+      projects: [],
+      integrations: {
+        jamApiKey: '',
+        linearApiKey: '',
+      },
+      tailscaleIp: 'localhost',
+    };
+
+    // ═══════════════════════════════════════════════════════
+    // Progress Bar
+    // ═══════════════════════════════════════════════════════
+
+    function renderProgressBar() {
+      const bar = document.getElementById('progressBar');
+      bar.innerHTML = '';
+
+      STEPS.forEach((step, idx) => {
+        // Step circle
+        const stepEl = document.createElement('div');
+        stepEl.className = 'progress-step';
+        if (step.id === currentStep) stepEl.classList.add('active');
+        if (completedSteps.has(step.id)) stepEl.classList.add('completed');
+
+        // Allow clicking any step for easy navigation
+        stepEl.onclick = () => goToStep(step.id);
+
+        const circle = document.createElement('div');
+        circle.className = 'progress-circle';
+        circle.textContent = completedSteps.has(step.id) ? '\u2713' : step.id;
+        stepEl.appendChild(circle);
+
+        const label = document.createElement('div');
+        label.className = 'progress-label';
+        label.textContent = step.label;
+        stepEl.appendChild(label);
+
+        bar.appendChild(stepEl);
+
+        // Line between steps
+        if (idx < STEPS.length - 1) {
+          const line = document.createElement('div');
+          line.className = 'progress-line';
+          if (completedSteps.has(step.id)) line.classList.add('filled');
+          bar.appendChild(line);
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step Navigation
+    // ═══════════════════════════════════════════════════════
+
+    function goToStep(n) {
+      // Mark current step as completed when moving forward
+      if (n > currentStep) {
+        completedSteps.add(currentStep);
+      }
+
+      // Sync state from form before navigating away
+      syncStateFromForm();
+
+      currentStep = n;
+
+      // Show/hide step cards
+      document.querySelectorAll('.step-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      const targetCard = document.getElementById('step-' + n);
+      if (targetCard) targetCard.classList.add('active');
+
+      renderProgressBar();
+
+      // Step-specific hooks
+      if (n === 2) runPrerequisites();
+      if (n === 3) updateLadders();
+      if (n === 7) renderReview();
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function syncStateFromForm() {
+      // Models
+      state.models.cliCommand = document.getElementById('cliCommand').value || 'claude';
+      state.models.primary = document.getElementById('modelPrimary').value || 'claude-opus-4-6';
+      state.models.secondary = document.getElementById('modelSecondary').value || 'claude-sonnet-4-6';
+      state.models.ancillary = document.getElementById('modelAncillary').value || 'claude-haiku-4-5-20251001';
+      state.models.costPrimary = parseFloat(document.getElementById('costPrimary').value) || 0;
+      state.models.costSecondary = parseFloat(document.getElementById('costSecondary').value) || 0;
+      state.models.costAncillary = parseFloat(document.getElementById('costAncillary').value) || 0;
+
+      // Telegram
+      state.telegram.token = document.getElementById('telegramToken').value.trim();
+      state.telegram.chatId = document.getElementById('telegramChatId').value.trim();
+
+      // Projects from table
+      syncProjectsFromTable();
+
+      // Integrations
+      if (!document.getElementById('skipJam').checked) {
+        state.integrations.jamApiKey = document.getElementById('jamApiKey').value.trim();
+      } else {
+        state.integrations.jamApiKey = '';
+      }
+      if (!document.getElementById('skipLinear').checked) {
+        state.integrations.linearApiKey = document.getElementById('linearApiKey').value.trim();
+      } else {
+        state.integrations.linearApiKey = '';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 1: Prerequisites
+    // ═══════════════════════════════════════════════════════
+
+    async function runPrerequisites() {
+      const list = document.getElementById('prereqList');
+      const btn = document.getElementById('btn-next-2');
+
+      list.innerHTML = '<li class="check-item"><span class="check-icon loading"><span class="spinner spinner-sm"></span></span><span class="check-name">Checking prerequisites...</span></li>';
+      btn.disabled = true;
+
+      // Install commands for missing dependencies
+      const INSTALL_COMMANDS = {
+        'Node.js >= 22': { mac: 'brew install node@22', label: 'Install via Homebrew' },
+        'Git': { mac: 'xcode-select --install', label: 'Install Xcode CLI Tools' },
+        'pnpm': { mac: 'npm install -g pnpm', label: 'Install pnpm' },
+        'Claude CLI': { mac: 'npm install -g @anthropic-ai/claude-code', label: 'Install Claude CLI' },
+        'PM2 (optional)': { mac: 'npm install -g pm2', label: 'Install PM2' },
+      };
+
+      // Demo mode: show simulated results
+      if (DEMO_MODE) {
+        const demoChecks = [
+          { name: 'Node.js >= 22', passed: false, detail: 'Not found — required' },
+          { name: 'Git', passed: true, detail: 'git version 2.50.1' },
+          { name: 'pnpm', passed: false, detail: 'Not found — required' },
+          { name: 'Claude CLI', passed: false, detail: 'Not found — required' },
+          { name: 'PM2 (optional)', passed: false, detail: 'Not found — optional process manager' },
+        ];
+        list.innerHTML = '';
+        const note = document.createElement('div');
+        note.style.cssText = 'color:var(--warning);font-size:13px;margin-bottom:12px;padding:8px 12px;background:rgba(210,153,34,0.1);border-radius:var(--radius-sm);border:1px solid rgba(210,153,34,0.2)';
+        note.textContent = 'Preview mode — these are simulated results. Run the wizard locally to check your actual system.';
+        list.parentNode.insertBefore(note, list);
+        for (const check of demoChecks) {
+          const li = document.createElement('li');
+          li.className = 'check-item ' + (check.passed ? 'pass' : 'fail');
+          li.innerHTML = '<span class="check-icon ' + (check.passed ? 'pass' : 'fail') + '">' + (check.passed ? '\u2713' : '\u2717') + '</span><span class="check-name">' + check.name + '</span><span class="check-detail">' + check.detail + '</span>';
+          if (!check.passed) {
+            const info = INSTALL_COMMANDS[check.name];
+            if (info) {
+              const hint = document.createElement('div');
+              hint.style.cssText = 'padding-left:28px;margin-top:4px';
+              hint.innerHTML = '<code style="font-size:12px;color:var(--text-dim)">' + info.mac + '</code>';
+              li.appendChild(hint);
+            }
+          }
+          list.appendChild(li);
+        }
+        btn.disabled = false; // Allow navigation in demo mode
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/prerequisites');
+        const data = await resp.json();
+
+        list.innerHTML = '';
+        let allPass = true;
+
+        for (const check of data.checks) {
+          const li = document.createElement('li');
+          li.className = 'check-item ' + (check.passed ? 'pass' : 'fail');
+
+          const icon = document.createElement('span');
+          icon.className = 'check-icon ' + (check.passed ? 'pass' : 'fail');
+          icon.textContent = check.passed ? '\u2713' : '\u2717';
+
+          const name = document.createElement('span');
+          name.className = 'check-name';
+          name.textContent = check.name;
+
+          const detail = document.createElement('span');
+          detail.className = 'check-detail';
+          detail.textContent = check.detail;
+
+          li.appendChild(icon);
+          li.appendChild(name);
+          li.appendChild(detail);
+
+          if (!check.passed) {
+            allPass = false;
+            const installInfo = INSTALL_COMMANDS[check.name];
+            const actionDiv = document.createElement('div');
+            actionDiv.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;padding-left:28px';
+
+            if (installInfo) {
+              const installBtn = document.createElement('button');
+              installBtn.className = 'btn';
+              installBtn.style.cssText = 'font-size:12px;padding:4px 12px';
+              installBtn.textContent = installInfo.label;
+              installBtn.onclick = async () => {
+                installBtn.disabled = true;
+                installBtn.textContent = 'Running...';
+                try {
+                  const r = await fetch('/api/run-install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: installInfo.mac }),
+                  });
+                  const result = await r.json();
+                  if (result.success) {
+                    installBtn.textContent = 'Installed! Re-checking...';
+                    setTimeout(runPrerequisites, 1500);
+                  } else {
+                    installBtn.textContent = 'Failed — run manually';
+                    const cmdSpan = document.createElement('code');
+                    cmdSpan.style.cssText = 'font-size:12px;color:var(--warning);background:var(--bg-input);padding:2px 6px;border-radius:3px';
+                    cmdSpan.textContent = installInfo.mac;
+                    actionDiv.appendChild(cmdSpan);
+                  }
+                } catch {
+                  installBtn.textContent = 'Error — run manually';
+                }
+              };
+              actionDiv.appendChild(installBtn);
+
+              const cmdCode = document.createElement('code');
+              cmdCode.style.cssText = 'font-size:12px;color:var(--text-dim)';
+              cmdCode.textContent = installInfo.mac;
+              actionDiv.appendChild(cmdCode);
+            } else if (check.help) {
+              const helpLink = document.createElement('a');
+              helpLink.href = check.help;
+              helpLink.target = '_blank';
+              helpLink.style.cssText = 'font-size:12px;color:var(--accent)';
+              helpLink.textContent = check.help;
+              actionDiv.appendChild(helpLink);
+            }
+
+            li.appendChild(actionDiv);
+          }
+
+          list.appendChild(li);
+        }
+
+        btn.disabled = !allPass;
+      } catch (err) {
+        list.innerHTML = '<li class="check-item fail"><span class="check-icon fail">\u2717</span><span class="check-name">Failed to check prerequisites</span><span class="check-detail">' + escapeHtml(err.message) + '</span></li>';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 2: Models
+    // ═══════════════════════════════════════════════════════
+
+    // Per-provider model defaults
+    const PROVIDER_MODELS = {
+      claude: { primary: 'claude-opus-4-6', secondary: 'claude-sonnet-4-6', ancillary: 'claude-haiku-4-5-20251001', costPrimary: 0.79, costSecondary: 0.25, costAncillary: 0.05 },
+      openai: { primary: 'gpt-4.5', secondary: 'gpt-4o', ancillary: 'gpt-4o-mini', costPrimary: 1.50, costSecondary: 0.40, costAncillary: 0.10 },
+    };
+
+    const PRESETS = {
+      claude: {
+        cliCommand: 'claude',
+        providers: { Primary: 'claude', Secondary: 'claude', Ancillary: 'claude' },
+      },
+      openai: {
+        cliCommand: 'claude',
+        providers: { Primary: 'openai', Secondary: 'openai', Ancillary: 'openai' },
+      },
+      mixed: {
+        cliCommand: 'claude',
+        providers: { Primary: 'claude', Secondary: 'claude', Ancillary: 'openai' },
+      },
+      custom: {
+        cliCommand: '',
+        providers: { Primary: 'custom', Secondary: 'custom', Ancillary: 'custom' },
+      },
+    };
+
+    // When a per-tier provider dropdown changes, fill in that tier's model defaults
+    function onProviderChange(tier) {
+      const provider = document.getElementById('provider' + tier).value;
+      const tierLower = tier.toLowerCase();
+      const defaults = PROVIDER_MODELS[provider];
+      if (defaults) {
+        document.getElementById('model' + tier).value = defaults[tierLower];
+        document.getElementById('cost' + tier).value = defaults['cost' + tier];
+      } else {
+        document.getElementById('model' + tier).value = '';
+        document.getElementById('cost' + tier).value = 0;
+      }
+      updateLadders();
+
+      // Show OpenAI note if any tier uses OpenAI
+      const anyOpenAI = ['Primary', 'Secondary', 'Ancillary'].some(
+        t => document.getElementById('provider' + t).value === 'openai'
+      );
+      document.getElementById('openaiNote').style.display = anyOpenAI ? 'block' : 'none';
+    }
+
+    function selectPreset(name) {
+      state.models.preset = name;
+      const preset = PRESETS[name];
+
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelector('[data-preset="' + name + '"]').classList.add('selected');
+
+      document.getElementById('cliCommand').value = preset.cliCommand;
+
+      // Set each tier's provider dropdown then fill in model defaults
+      for (const tier of ['Primary', 'Secondary', 'Ancillary']) {
+        const provider = preset.providers[tier];
+        document.getElementById('provider' + tier).value = provider;
+        onProviderChange(tier);
+      }
+
+      updateLadders();
+    }
+
+    function updateLadders() {
+      const primary = document.getElementById('modelPrimary').value || 'primary';
+      const secondary = document.getElementById('modelSecondary').value || 'secondary';
+      const ancillary = document.getElementById('modelAncillary').value || 'ancillary';
+
+      const tierClass = (model) => {
+        if (model === primary) return 'tier-primary';
+        if (model === secondary) return 'tier-secondary';
+        if (model === ancillary) return 'tier-ancillary';
+        return 'tier-primary';
+      };
+
+      // Routine: ancillary -> secondary -> primary
+      renderLadder('ladderRoutine', [
+        { label: ancillary, tier: 'tier-ancillary', attempt: '1st attempt' },
+        { label: secondary, tier: 'tier-secondary', attempt: '2nd attempt' },
+        { label: primary, tier: 'tier-primary', attempt: '3rd attempt' },
+      ]);
+
+      // Complex: primary -> primary -> primary
+      renderLadder('ladderComplex', [
+        { label: primary, tier: 'tier-primary', attempt: '1st attempt' },
+        { label: primary, tier: 'tier-primary', attempt: '2nd attempt' },
+        { label: primary, tier: 'tier-primary', attempt: '3rd attempt' },
+      ]);
+
+      // Auth: primary -> primary -> primary
+      renderLadder('ladderAuth', [
+        { label: primary, tier: 'tier-primary', attempt: '1st attempt' },
+        { label: primary, tier: 'tier-primary', attempt: '2nd attempt' },
+        { label: primary, tier: 'tier-primary', attempt: '3rd attempt' },
+      ]);
+    }
+
+    function renderLadder(containerId, nodes) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      nodes.forEach((node, idx) => {
+        const div = document.createElement('div');
+        div.className = 'ladder-node ' + node.tier;
+        div.textContent = node.label + ' (' + node.attempt + ')';
+        container.appendChild(div);
+
+        if (idx < nodes.length - 1) {
+          const arrow = document.createElement('div');
+          arrow.className = 'ladder-arrow';
+          arrow.innerHTML = '&#8595;';
+          container.appendChild(arrow);
+        }
+      });
+    }
+
+    // Listen for model input changes to update ladders
+    document.getElementById('modelPrimary').addEventListener('input', updateLadders);
+    document.getElementById('modelSecondary').addEventListener('input', updateLadders);
+    document.getElementById('modelAncillary').addEventListener('input', updateLadders);
+
+    async function testCli() {
+      const btn = document.getElementById('testCliBtn');
+      const spinner = document.getElementById('testCliSpinner');
+      const result = document.getElementById('testCliResult');
+
+      const command = document.getElementById('cliCommand').value || 'claude';
+      const model = document.getElementById('modelPrimary').value || '';
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      result.className = 'test-result';
+      result.classList.remove('visible');
+
+      try {
+        const resp = await fetch('/api/test-cli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, model }),
+        });
+        const data = await resp.json();
+
+        result.classList.add('visible');
+        if (data.success) {
+          result.className = 'test-result visible success';
+          result.innerHTML = '<strong>Success</strong> - CLI responded correctly.<pre>' + escapeHtml(data.output) + '</pre>';
+        } else {
+          result.className = 'test-result visible error';
+          result.innerHTML = '<strong>Failed</strong><pre>' + escapeHtml(data.error || 'Unknown error') + '</pre>';
+        }
+      } catch (err) {
+        result.className = 'test-result visible error';
+        result.innerHTML = '<strong>Network error</strong><pre>' + escapeHtml(err.message) + '</pre>';
+      }
+
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 3: Telegram
+    // ═══════════════════════════════════════════════════════
+
+    async function testTelegram() {
+      const btn = document.getElementById('testTelegramBtn');
+      const spinner = document.getElementById('testTelegramSpinner');
+      const result = document.getElementById('testTelegramResult');
+      const botInfo = document.getElementById('botInfo');
+      const token = document.getElementById('telegramToken').value.trim();
+
+      if (!token) {
+        result.className = 'test-result visible error';
+        result.textContent = 'Please enter a bot token first.';
+        return;
+      }
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      result.classList.remove('visible');
+      botInfo.classList.remove('visible');
+
+      try {
+        const resp = await fetch('/api/test-telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          result.classList.remove('visible');
+          botInfo.classList.add('visible');
+          document.getElementById('botName').textContent = data.bot.name;
+          document.getElementById('botUsername').textContent = '@' + data.bot.username;
+          state.telegram.botName = data.bot.name;
+          state.telegram.botUsername = data.bot.username;
+          telegramVerified = true;
+        } else {
+          result.className = 'test-result visible error';
+          result.textContent = 'Invalid token: ' + (data.error || 'Unknown error');
+          telegramVerified = false;
+        }
+      } catch (err) {
+        result.className = 'test-result visible error';
+        result.textContent = 'Network error: ' + err.message;
+        telegramVerified = false;
+      }
+
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 4: Projects
+    // ═══════════════════════════════════════════════════════
+
+    function addProjectRow(data) {
+      const tbody = document.getElementById('projectsBody');
+      const id = ++projectIdCounter;
+
+      const row = document.createElement('tr');
+      row.id = 'project-row-' + id;
+      row.dataset.projectId = id;
+
+      const name = data ? data.name : '';
+      const path = data ? data.path : '';
+      const hasDevServer = data ? data.hasDevServer : false;
+      const devCommand = data ? data.devCommand : '';
+      const devPort = data ? data.devPort : '';
+
+      row.innerHTML = `
+        <td><input type="text" class="form-input mono" placeholder="my-app" value="${escapeHtml(name)}" data-field="name"></td>
+        <td><input type="text" class="form-input mono" placeholder="~/Projects/my-app" value="${escapeHtml(path)}" data-field="path"></td>
+        <td style="text-align:center">
+          <label class="toggle-switch">
+            <input type="checkbox" data-field="hasDevServer" ${hasDevServer ? 'checked' : ''}>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">${hasDevServer ? 'Yes' : 'No'}</span>
+          </label>
+        </td>
+        <td><input type="text" class="form-input mono" placeholder="npm run dev" value="${escapeHtml(devCommand)}" data-field="devCommand" ${!hasDevServer ? 'disabled' : ''}></td>
+        <td><input type="number" class="form-input" placeholder="3000" value="${devPort}" data-field="devPort" style="width:70px" ${!hasDevServer ? 'disabled' : ''}></td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-outline" onclick="detectProject(${id})">Detect</button>
+            <button class="remove-row-btn" onclick="removeProjectRow(${id})" title="Remove">&times;</button>
+          </div>
+        </td>
+      `;
+
+      // Toggle dev server fields
+      const toggle = row.querySelector('[data-field="hasDevServer"]');
+      toggle.addEventListener('change', () => {
+        const devCmdInput = row.querySelector('[data-field="devCommand"]');
+        const devPortInput = row.querySelector('[data-field="devPort"]');
+        const toggleLabel = row.querySelector('.toggle-label');
+        devCmdInput.disabled = !toggle.checked;
+        devPortInput.disabled = !toggle.checked;
+        if (toggleLabel) toggleLabel.textContent = toggle.checked ? 'Yes' : 'No';
+      });
+
+      tbody.appendChild(row);
+    }
+
+    function removeProjectRow(id) {
+      const row = document.getElementById('project-row-' + id);
+      if (row) row.remove();
+    }
+
+    function syncProjectsFromTable() {
+      const rows = document.querySelectorAll('#projectsBody tr');
+      state.projects = [];
+
+      rows.forEach(row => {
+        const name = row.querySelector('[data-field="name"]').value.trim();
+        const path = row.querySelector('[data-field="path"]').value.trim();
+        const hasDevServer = row.querySelector('[data-field="hasDevServer"]').checked;
+        const devCommand = row.querySelector('[data-field="devCommand"]').value.trim();
+        const devPort = parseInt(row.querySelector('[data-field="devPort"]').value) || 0;
+
+        if (name || path) {
+          state.projects.push({
+            name: name || 'unnamed',
+            path: path,
+            description: '',
+            hasDevServer,
+            devCommand,
+            devPort,
+          });
+        }
+      });
+    }
+
+    async function detectProject(rowId) {
+      const row = document.getElementById('project-row-' + rowId);
+      if (!row) return;
+
+      const pathInput = row.querySelector('[data-field="path"]');
+      const path = pathInput.value.trim();
+      if (!path) {
+        pathInput.style.borderColor = 'var(--error)';
+        setTimeout(() => { pathInput.style.borderColor = ''; }, 2000);
+        return;
+      }
+
+      const detectBtn = row.querySelector('.btn-outline');
+      const origText = detectBtn.textContent;
+      detectBtn.disabled = true;
+      detectBtn.innerHTML = '<span class="spinner spinner-sm"></span>';
+
+      try {
+        const resp = await fetch('/api/detect-project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          // Auto-fill name from path if empty
+          const nameInput = row.querySelector('[data-field="name"]');
+          if (!nameInput.value.trim()) {
+            const parts = path.replace(/\/$/, '').split('/');
+            nameInput.value = parts[parts.length - 1].toLowerCase().replace(/[^a-z0-9-]/g, '-');
+          }
+
+          // Fill dev server info
+          const toggle = row.querySelector('[data-field="hasDevServer"]');
+          toggle.checked = data.hasDevServer;
+          toggle.dispatchEvent(new Event('change'));
+
+          const devCmdInput = row.querySelector('[data-field="devCommand"]');
+          devCmdInput.value = data.devCommand;
+          devCmdInput.disabled = !data.hasDevServer;
+
+          const devPortInput = row.querySelector('[data-field="devPort"]');
+          devPortInput.value = data.suggestedPort || '';
+          devPortInput.disabled = !data.hasDevServer;
+
+          detectBtn.textContent = data.framework;
+          detectBtn.style.color = 'var(--success)';
+          setTimeout(() => {
+            detectBtn.textContent = origText;
+            detectBtn.style.color = '';
+          }, 3000);
+        } else {
+          detectBtn.textContent = 'Error';
+          detectBtn.style.color = 'var(--error)';
+          setTimeout(() => {
+            detectBtn.textContent = origText;
+            detectBtn.style.color = '';
+          }, 3000);
+        }
+      } catch (err) {
+        detectBtn.textContent = 'Error';
+        detectBtn.style.color = 'var(--error)';
+        setTimeout(() => {
+          detectBtn.textContent = origText;
+          detectBtn.style.color = '';
+        }, 3000);
+      }
+
+      detectBtn.disabled = false;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 5: Integrations
+    // ═══════════════════════════════════════════════════════
+
+    function toggleIntegration(name) {
+      if (name === 'jam') {
+        const skip = document.getElementById('skipJam').checked;
+        document.getElementById('jamApiKey').disabled = skip;
+        if (skip) document.getElementById('jamApiKey').value = '';
+      } else if (name === 'linear') {
+        const skip = document.getElementById('skipLinear').checked;
+        document.getElementById('linearApiKey').disabled = skip;
+        if (skip) document.getElementById('linearApiKey').value = '';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 6: Review & Save
+    // ═══════════════════════════════════════════════════════
+
+    function renderReview() {
+      syncStateFromForm();
+
+      // Generate models.yaml preview
+      const modelsYaml = generateModelsYaml();
+      document.getElementById('previewModels').textContent = modelsYaml;
+
+      // Generate projects.yaml preview
+      const projectsYaml = generateProjectsYaml();
+      document.getElementById('previewProjects').textContent = projectsYaml;
+
+      // Generate .env preview
+      const envContent = generateEnv();
+      document.getElementById('previewEnv').textContent = envContent;
+    }
+
+    function generateModelsYaml() {
+      const m = state.models;
+      return `# Model Configuration
+# Generated by DreamTeam Setup Wizard
+
+primary: ${m.primary || 'opus'}
+secondary: ${m.secondary || 'sonnet'}
+ancillary: ${m.ancillary || 'haiku'}
+
+cliCommand: ${m.cliCommand || 'claude'}
+
+routineLadder:
+  - ancillary
+  - secondary
+  - primary
+
+complexLadder:
+  - primary
+  - primary
+  - primary
+
+authLadder:
+  - primary
+  - primary
+  - primary
+
+estimatedCost:
+  primary: ${m.costPrimary ?? 0.79}
+  secondary: ${m.costSecondary ?? 0.25}
+  ancillary: ${m.costAncillary ?? 0.05}`;
+    }
+
+    function generateProjectsYaml() {
+      let yaml = `# DreamTeam Project Registry
+# Generated by DreamTeam Setup Wizard
+
+projects:
+  dreamteam:
+    path: ~/projects/dreamteam
+    description: "Multi-project orchestration system"
+    hasDevServer: false`;
+
+      for (const proj of state.projects) {
+        if (!proj.name || proj.name === 'dreamteam') continue;
+
+        const safePath = proj.path.includes(' ') ? ('"' + proj.path + '"') : proj.path;
+        yaml += `
+
+  ${proj.name}:
+    path: ${safePath}
+    description: "${proj.name} project"
+    hasDevServer: ${proj.hasDevServer}`;
+
+        if (proj.hasDevServer) {
+          yaml += `
+    devCommand: "${proj.devCommand || 'npm run dev'}"
+    devPort: ${proj.devPort || 3000}
+    healthCheck: "http://localhost:${proj.devPort || 3000}"`;
+        }
+      }
+
+      yaml += `
+
+tailscaleIp: "localhost"`;
+
+      return yaml;
+    }
+
+    function generateEnv() {
+      let env = `# DreamTeam Environment Variables
+# Generated by DreamTeam Setup Wizard
+
+SOPS_AGE_KEY_FILE=./config/age-key.txt
+NODE_ENV=development
+TAILSCALE_IP=localhost`;
+
+      if (state.telegram.token) {
+        env += `
+
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=${state.telegram.token}
+TELEGRAM_ALLOWED_USERS=${state.telegram.chatId || ''}`;
+      }
+
+      if (state.integrations.jamApiKey) {
+        env += `
+
+# Jam.dev
+JAM_API_KEY=${state.integrations.jamApiKey}`;
+      }
+
+      if (state.integrations.linearApiKey) {
+        env += `
+
+# Linear
+LINEAR_API_KEY=${state.integrations.linearApiKey}`;
+      }
+
+      return env;
+    }
+
+    async function saveConfig() {
+      syncStateFromForm();
+
+      const btn = document.getElementById('saveBtn');
+      const spinner = document.getElementById('saveSpinner');
+      const errEl = document.getElementById('saveError');
+
+      if (DEMO_MODE) {
+        errEl.innerHTML = '<strong>Preview mode</strong> — to save configuration, clone the repo and run the wizard locally:<br><code style="display:inline-block;margin-top:6px;padding:4px 8px;background:var(--bg);border-radius:3px">curl -fsSL https://raw.githubusercontent.com/gocon-loca/dreamteam-ai/main/scripts/bootstrap.sh | bash</code><br><span style="color:var(--text-muted);font-size:12px;margin-top:4px;display:inline-block">This installs prerequisites, clones the repo, and launches this wizard locally.</span>';
+        errEl.style.cssText = 'background:rgba(88,166,255,0.1);border:1px solid rgba(88,166,255,0.2);color:var(--text);padding:12px 16px;border-radius:var(--radius-sm);margin-top:12px;font-size:13px;display:block';
+        return;
+      }
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      errEl.classList.remove('visible');
+
+      try {
+        const resp = await fetch('/api/save-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            models: state.models,
+            projects: state.projects,
+            telegram: state.telegram,
+            integrations: state.integrations,
+            tailscaleIp: state.tailscaleIp,
+          }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          // Show success panel, hide save actions
+          document.getElementById('saveActions').style.display = 'none';
+          document.getElementById('reviewContent').style.display = 'none';
+          document.getElementById('successPanel').classList.add('visible');
+          completedSteps.add(6);
+          renderProgressBar();
+        } else {
+          errEl.textContent = 'Save failed: ' + (data.errors || []).join(', ');
+          errEl.classList.add('visible');
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error: ' + err.message;
+        errEl.classList.add('visible');
+      }
+
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Preflight
+    // ═══════════════════════════════════════════════════════
+
+    async function runPreflight() {
+      const list = document.getElementById('preflightList');
+      list.innerHTML = '<li class="check-item"><span class="check-icon loading"><span class="spinner spinner-sm"></span></span><span class="check-name">Running preflight checks...</span></li>';
+
+      try {
+        const resp = await fetch('/api/preflight', { method: 'POST' });
+        const data = await resp.json();
+
+        list.innerHTML = '';
+
+        if (data.checks) {
+          for (const check of data.checks) {
+            const li = document.createElement('li');
+            li.className = 'check-item ' + (check.passed ? 'pass' : 'fail');
+
+            const icon = document.createElement('span');
+            icon.className = 'check-icon ' + (check.passed ? 'pass' : 'fail');
+            icon.textContent = check.passed ? '\u2713' : '\u2717';
+
+            const name = document.createElement('span');
+            name.className = 'check-name';
+            name.textContent = check.name;
+
+            const detail = document.createElement('span');
+            detail.className = 'check-detail';
+            detail.textContent = check.detail;
+
+            li.appendChild(icon);
+            li.appendChild(name);
+            li.appendChild(detail);
+            list.appendChild(li);
+          }
+
+          if (data.ready) {
+            const summary = document.createElement('li');
+            summary.className = 'check-item pass';
+            summary.innerHTML = '<span class="check-icon pass">\u2713</span><span class="check-name" style="color:var(--success)">All checks passed. Ready to launch.</span>';
+            list.appendChild(summary);
+          }
+        }
+      } catch (err) {
+        list.innerHTML = '<li class="check-item fail"><span class="check-icon fail">\u2717</span><span class="check-name">Preflight failed: ' + escapeHtml(err.message) + '</span></li>';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Utilities
+    // ═══════════════════════════════════════════════════════
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Initialize
+    // ═══════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════
+    // Demo Mode — detect when running without local server
+    // ═══════════════════════════════════════════════════════
+
+    let DEMO_MODE = false;
+
+    async function detectDemoMode() {
+      // If not running on localhost, it's the Vercel preview site
+      const host = window.location.hostname;
+      if (host !== 'localhost' && host !== '127.0.0.1') return true;
+
+      try {
+        const resp = await fetch('/api/prerequisites', { signal: AbortSignal.timeout(2000) });
+        if (!resp.ok) throw new Error('not ok');
+        return false;
+      } catch {
+        return true;
+      }
+    }
+
+    function showDemoBanner() {
+      const banner = document.createElement('div');
+      banner.id = 'demoBanner';
+      banner.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap';
+      banner.innerHTML = `
+        <span style="font-size:20px">&#x1f441;</span>
+        <div style="flex:1;min-width:200px">
+          <strong style="color:var(--accent)">Preview Mode</strong>
+          <span style="color:var(--text-muted);margin-left:6px">— You're viewing the setup wizard online. To configure DreamTeam on your machine:</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a href="https://github.com/gocon-loca/dreamteam-ai" target="_blank" class="btn" style="font-size:13px;padding:6px 14px;text-decoration:none">View on GitHub</a>
+          <button onclick="document.getElementById('cloneInstructions').style.display=document.getElementById('cloneInstructions').style.display==='none'?'block':'none'" class="btn btn-secondary" style="font-size:13px;padding:6px 14px">Quick Start</button>
+        </div>
+        <div id="cloneInstructions" style="display:none;width:100%;margin-top:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;line-height:1.8">
+          <div style="margin-bottom:12px">
+            <strong style="color:var(--text)">Step 1: Open a terminal</strong><br>
+            <span style="color:var(--text-muted)">
+              <strong>Mac:</strong> Press Cmd + Space, type <code style="background:var(--bg);padding:1px 5px;border-radius:3px">Terminal</code>, hit Enter<br>
+              <strong>Windows:</strong> Press Win + R, type <code style="background:var(--bg);padding:1px 5px;border-radius:3px">wt</code> (or <code style="background:var(--bg);padding:1px 5px;border-radius:3px">cmd</code>), hit Enter<br>
+              <strong>Linux:</strong> Press Ctrl + Alt + T
+            </span>
+          </div>
+          <div style="font-family:var(--font-mono)">
+            <strong style="color:var(--text);font-family:var(--font-sans)">Step 2: Paste this and hit Enter</strong><br>
+            <span style="color:var(--text-muted)"># Installs Node 22, pnpm, Claude CLI, clones repo, launches this wizard</span><br>
+            curl -fsSL https://raw.githubusercontent.com/gocon-loca/dreamteam-ai/main/scripts/bootstrap.sh | bash
+          </div>
+        </div>
+      `;
+      const app = document.querySelector('.app');
+      app.insertBefore(banner, app.querySelector('.progress-bar'));
+    }
+
+    (async function init() {
+      DEMO_MODE = await detectDemoMode();
+
+      renderProgressBar();
+
+      // Show step 1
+      document.getElementById('step-1').classList.add('active');
+
+      // Add one empty project row
+      addProjectRow();
+
+      // Initial ladder render
+      updateLadders();
+
+      if (DEMO_MODE) {
+        showDemoBanner();
+        // Hide elements that need a local server
+        const testSection = document.getElementById('testCliSection');
+        if (testSection) testSection.style.display = 'none';
+      }
+    })();
+  </script>
+</body>
+</html>
