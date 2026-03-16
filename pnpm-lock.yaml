@@ -12,14 +12,14 @@ importers:
         specifier: ^0.2.63
         version: 0.2.63(zod@3.25.76)
       '@hono/node-server':
-        specifier: ^1.19.9
-        version: 1.19.9(hono@4.11.8)
+        specifier: ^1.19.10
+        version: 1.19.11(hono@4.12.8)
       better-sqlite3:
         specifier: ^12.6.2
         version: 12.6.2
       hono:
-        specifier: ^4.11.8
-        version: 4.11.8
+        specifier: ^4.12.7
+        version: 4.12.8
       langfuse:
         specifier: ^3.38.6
         version: 3.38.6
@@ -225,8 +225,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hono/node-server@1.19.9':
-    resolution: {integrity: sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw==}
+  '@hono/node-server@1.19.11':
+    resolution: {integrity: sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -438,8 +438,8 @@ packages:
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
 
-  hono@4.11.8:
-    resolution: {integrity: sha512-eVkB/CYCCei7K2WElZW9yYQFWssG0DhaDhVvr7wy5jJ22K+ck8fWW0EsLpB0sITUTvPnc97+rrbQqIr5iqiy9Q==}
+  hono@4.12.8:
+    resolution: {integrity: sha512-VJCEvtrezO1IAR+kqEYnxUOoStaQPGrCmX3j4wDTNOcD1uRPFpGlwQUIW8niPuvHXaTUxeOUl5MMDGrl+tmO9A==}
     engines: {node: '>=16.9.0'}
 
   ieee754@1.2.1:
@@ -725,9 +725,9 @@ snapshots:
   '@esbuild/win32-x64@0.27.2':
     optional: true
 
-  '@hono/node-server@1.19.9(hono@4.11.8)':
+  '@hono/node-server@1.19.11(hono@4.12.8)':
     dependencies:
-      hono: 4.11.8
+      hono: 4.12.8
 
   '@img/sharp-darwin-arm64@0.34.5':
     optionalDependencies:
@@ -911,7 +911,7 @@ snapshots:
 
   github-from-package@0.0.0: {}
 
-  hono@4.11.8: {}
+  hono@4.12.8: {}
 
   ieee754@1.2.1: {}
 

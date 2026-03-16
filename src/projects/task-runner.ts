@@ -1403,7 +1403,6 @@ export async function runQuickCommand(
       command,
     ], {
       cwd: project.path,
-      shell: true,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: cleanEnvForClaude(),
     });

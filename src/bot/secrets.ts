@@ -67,7 +67,6 @@ export async function getSecrets(): Promise<Secrets> {
   // Try encrypted file first (production)
   if (existsSync(encryptedPath)) {
     try {
-      console.log(`Decrypting secrets from ${encryptedPath} with key ${ageKeyPath}`);
       const decrypted = execSync(`sops --decrypt "${encryptedPath}"`, {
         encoding: 'utf-8',
         env: {

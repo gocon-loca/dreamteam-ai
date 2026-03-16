@@ -72,6 +72,23 @@ export async function runTestCommands(
   const hasVenv = existsSync(venvActivate);
 
   for (const command of commands) {
+    // Block dangerous shell injection patterns — TEST_COMMANDS come from goal descriptions
+    // which may be user-authored. Only allow standard test/check patterns.
+    if (/`[^`]+`/.test(command) || /\$\([^)]+\)/.test(command)) {
+      // Allow $() only inside python -c strings (common pattern for assertions)
+      const strippedOfPythonC = command.replace(/-c\s+["'][^"']*["']/g, '');
+      if (/`[^`]+`/.test(strippedOfPythonC) || /\$\([^)]+\)/.test(strippedOfPythonC)) {
+        results.push({
+          command,
+          passed: false,
+          output: 'BLOCKED: Command contains shell injection pattern (backticks or $() outside quoted strings). Rewrite using pipes instead.',
+          exitCode: 1,
+          durationMs: 0,
+        });
+        continue;
+      }
+    }
+
     // Fix common shell compatibility issues in test commands:
     // 1. \! (escaped negation) — macOS bash 3.2 doesn't support ! as pipeline negation
     //    in non-interactive mode. Convert: \! CMD && echo X  →  if CMD; then exit 1; else echo X; fi
@@ -107,7 +124,7 @@ export async function runTestCommands(
     // explicitly ensures complex pipes (cmd | if read n; then ...) work
     // correctly by running in a single bash invocation.
     const shellCommand = (hasVenv && isPythonCmd)
-      ? `source ${venvActivate} && ${sanitized}`
+      ? `source "${venvActivate}" && ${sanitized}`
       : sanitized;
 
     const start = Date.now();
