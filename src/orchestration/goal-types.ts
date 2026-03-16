@@ -46,6 +46,8 @@ export interface Goal {
     failedRequests?: string;   // Failed API calls summary (method, path, status)
     userEvents?: string;       // User interaction sequence (click/type/navigate)
   };
+  // Feedback Jam — user tested a completed goal and posted a new Jam showing it's still broken
+  feedbackJamId?: string;
   // Dedup warning — set by addGoal when similar goals exist
   dupWarning?: string;
   // Parsed debrief from agent output

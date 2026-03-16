@@ -49,7 +49,7 @@ import {
 import { log, withTimeout } from './supervisor-utils.js';
 import { sendTelegram } from './supervisor-telegram.js';
 import { recordRateLimitHit } from './supervisor-capacity.js';
-import { notifyGoalComplete, notifyGoalRejected, notifyGoalBlocked } from '../comms/slack-notify.js';
+import { notifyGoalComplete, notifyGoalRejected, notifyGoalBlocked, type SlackCompletionInfo } from '../comms/slack-notify.js';
 
 const slog = createLogger('supervisor-goals');
 
@@ -325,6 +325,22 @@ async function handleCompletedGoal(item: WorkItem): Promise<void> {
   // 5. E2E verification — disabled (no Playwright specs exist, always rubber-stamps)
   // Re-enable when real E2E specs are written for projects.
 
+  // Gather tunnel URL and debrief summary for both Telegram and Slack notifications
+  let tunnelUrl = '';
+  let whatChanged = '';
+  if (!goalRejected) {
+    try {
+      const { getTunnelUrl } = await import('../projects/tunnel-manager.js');
+      tunnelUrl = getTunnelUrl(item.project) || '';
+    } catch (e) { slog.swallow('get-tunnel-url', e); }
+
+    try {
+      const { parseDebrief } = await import('../orchestration/goal-manager.js');
+      const briefing = parseDebrief(output);
+      if (briefing?.working) whatChanged = briefing.working.slice(0, 300);
+    } catch (e) { slog.swallow('parse-debrief-what-changed', e); }
+  }
+
   // 6. Build rich completion message with visual review (skip if rejected)
   if (!goalRejected) {
     // Set reviewStatus to pending_review
@@ -341,21 +357,6 @@ async function handleCompletedGoal(item: WorkItem): Promise<void> {
         }
       } catch (e) { slog.swallow('get-agent-run-cost', e); }
     }
-
-    // Get tunnel URL
-    let tunnelUrl = '';
-    try {
-      const { getTunnelUrl } = await import('../projects/tunnel-manager.js');
-      tunnelUrl = getTunnelUrl(item.project) || '';
-    } catch (e) { slog.swallow('get-tunnel-url', e); }
-
-    // Extract what changed from debrief (already parsed above)
-    let whatChanged = '';
-    try {
-      const { parseDebrief } = await import('../orchestration/goal-manager.js');
-      const briefing = parseDebrief(output);
-      if (briefing?.working) whatChanged = briefing.working.slice(0, 300);
-    } catch (e) { slog.swallow('parse-debrief-what-changed', e); }
 
     // Extract acceptance criteria from goal description
     let checklist = '';
@@ -422,9 +423,27 @@ async function handleCompletedGoal(item: WorkItem): Promise<void> {
     if (goalRejected) {
       notifyGoalRejected(item.project, goal?.title || item.goal_id, 'Review concern — see Telegram for details');
     } else {
-      notifyGoalComplete(item.project, goal?.title || item.goal_id, item.goal_id, item.cost_usd || undefined);
+      // Build rich completion info for Slack
+      const slackInfo: SlackCompletionInfo = {};
+      if (tunnelUrl) slackInfo.tunnelUrl = tunnelUrl;
+      if (whatChanged) slackInfo.whatChanged = whatChanged;
+      if (goal.source?.startsWith('jam:')) {
+        slackInfo.jamId = goal.source.replace('jam:', '');
+      }
+      notifyGoalComplete(item.project, goal?.title || item.goal_id, item.goal_id, item.cost_usd || undefined, slackInfo);
     }
   } catch { /* best-effort */ }
+
+  // Log Jam completion for tracing (direct Jam API comment would require API key integration)
+  if (!goalRejected && goal.source?.startsWith('jam:')) {
+    const jamId = goal.source.replace('jam:', '');
+    log(`[${item.project}] Jam-sourced goal completed — Jam ID: ${jamId}, tunnel: ${tunnelUrl || 'none'}`);
+    logEvent('goal_complete', {
+      goalId: item.goal_id,
+      project: item.project,
+      details: `jam:${jamId}, tunnel=${tunnelUrl || 'none'}, cost=$${(item.cost_usd || 0).toFixed(2)}`,
+    });
+  }
 }
 
 async function handleFailedGoal(item: WorkItem): Promise<void> {

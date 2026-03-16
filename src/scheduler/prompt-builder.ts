@@ -50,6 +50,108 @@ export interface BuiltPrompt {
   estimatedCostUsd: number;
 }
 
+// ── Context size limits per model tier (chars) ──────────────
+const TIER_CONTEXT_LIMITS: Record<string, number> = {
+  ancillary: 2000,   // Haiku — essentials only
+  secondary: 3500,   // Sonnet — include precedents + lessons
+  primary: 6000,     // Opus — full context
+};
+
+/**
+ * Truncate a context section to the model tier's limit.
+ */
+function truncateForTier(text: string, tier: string): string {
+  const limit = TIER_CONTEXT_LIMITS[tier] || 6000;
+  if (text.length <= limit) return text;
+  return text.slice(0, limit) + '\n...(truncated for model tier)';
+}
+
+/**
+ * Get precedent context from recent successful goals in the same project.
+ * Shows agents what "good" looks like — files changed, commits made.
+ */
+function getPrecedentContext(goal: Goal, project: string): string | null {
+  try {
+    const allGoals = getAllGoals();
+    const completed = allGoals
+      .filter(g => g.project === project && g.status === 'completed' && g.id !== goal.id)
+      .sort((a, b) => {
+        const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+        const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, 10);
+
+    if (completed.length === 0) return null;
+
+    // Filter for goals with similar archetype or overlapping keywords
+    const goalText = `${goal.title} ${goal.description || ''}`.toLowerCase();
+    const goalWords = new Set(goalText.split(/\s+/).filter(w => w.length > 3));
+
+    const relevant = completed
+      .map(g => {
+        const gText = `${g.title} ${g.description || ''}`.toLowerCase();
+        const overlap = [...goalWords].filter(w => gText.includes(w)).length;
+        return { goal: g, score: overlap + (g.archetype === goal.archetype ? 2 : 0) };
+      })
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    if (relevant.length === 0) return null;
+
+    const lines: string[] = ['## Code Precedents (recent successful work in this project)'];
+    for (const r of relevant) {
+      const d = r.goal.debrief as Record<string, unknown> | undefined;
+      const commits = d?.commits;
+      const working = d?.working;
+      lines.push(`- "${r.goal.title}"`);
+      if (commits && Array.isArray(commits) && commits.length > 0) {
+        lines.push(`  Commits: ${(commits as string[]).slice(0, 3).join(', ')}`);
+      }
+      if (working && typeof working === 'string') {
+        lines.push(`  Result: ${working.slice(0, 150)}`);
+      }
+    }
+    return lines.join('\n');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get dependency context — what prerequisite goals produced.
+ */
+function getDependencyContext(goal: Goal): string | null {
+  if (!goal.dependsOn || goal.dependsOn.length === 0) return null;
+
+  const lines: string[] = ['## Prerequisites'];
+  let foundAny = false;
+
+  for (const depId of goal.dependsOn) {
+    try {
+      const dep = getGoal(depId);
+      if (!dep) continue;
+      foundAny = true;
+
+      const status = dep.status === 'completed' ? 'completed' : dep.status;
+      const d = dep.debrief as Record<string, unknown> | undefined;
+      const working = d?.working;
+      const commits = d?.commits;
+
+      lines.push(`- "${dep.title}" — ${status}`);
+      if (working && typeof working === 'string') {
+        lines.push(`  Output: ${working.slice(0, 200)}`);
+      }
+      if (commits && Array.isArray(commits) && commits.length > 0) {
+        lines.push(`  Files changed: ${(commits as string[]).slice(0, 5).join(', ')}`);
+      }
+    } catch { /* skip missing deps */ }
+  }
+
+  return foundAny ? lines.join('\n') : null;
+}
+
 /**
  * Build the full prompt for a goal, including knowledge context,
  * debrief history, archetype instructions, and model selection.
@@ -169,6 +271,26 @@ ${qualityMatch[0].slice(0, 1500)}
     } catch (e) { log.swallow('load-adora-context', e); }
   }
 
+  // Select model early so we can apply tier-aware context compression
+  let modelDecision;
+  try {
+    const budgetData = getRealBudgetData();
+    modelDecision = selectModel(goal, {
+      budgetRemainingUsd: 100 - budgetData.todayUsd,
+      archetype,
+    });
+  } catch (e) {
+    log.swallow('select-model', e);
+    modelDecision = {
+      model: 'primary' as const,
+      reasoning: 'router error',
+      estimatedCostUsd: 0.79,
+      confidence: 0.5,
+      fallbackModel: 'primary' as const,
+    };
+  }
+  const modelTier: string = modelDecision.model;
+
   // Build the prompt — keep it tight and focused
   const sections: string[] = [];
 
@@ -209,6 +331,22 @@ ${qualityMatch[0].slice(0, 1500)}
     sections.push(contextParts.join('\n'));
   }
 
+  // 2b. Precedent code — recent successful work in this project
+  try {
+    const precedent = getPrecedentContext(goal, project);
+    if (precedent) {
+      sections.push(precedent);
+    }
+  } catch (e) { log.swallow('get-precedent-context', e); }
+
+  // 2c. Dependency context — what prerequisite goals produced
+  try {
+    const depContext = getDependencyContext(goal);
+    if (depContext) {
+      sections.push(depContext);
+    }
+  } catch (e) { log.swallow('get-dependency-context', e); }
+
   // 3. Role context (archetype-specific instructions)
   if (archetypeContext) {
     sections.push(`## Role: ${archetype}\n${archetypeContext}`);
@@ -233,9 +371,10 @@ ${qualityMatch[0].slice(0, 1500)}
       if (existsSync(lessonsPath)) {
         const lessons = readFileSync(lessonsPath, 'utf-8').trim();
         if (lessons) {
-          // Only inject the last ~1500 chars to keep prompt lean
-          const trimmed = lessons.length > 1500
-            ? '...\n' + lessons.slice(-1500)
+          // Tier-aware truncation: Haiku gets less context, Opus gets more
+          const lessonsLimit = TIER_CONTEXT_LIMITS[modelTier] || 1500;
+          const trimmed = lessons.length > lessonsLimit
+            ? '...\n' + lessons.slice(-lessonsLimit)
             : lessons;
           sections.push(`## Lessons from Past Work\nThese patterns caused rejections or failures on this project. Do NOT repeat them.\n\n${trimmed}`);
         }
@@ -271,6 +410,20 @@ ${qualityMatch[0].slice(0, 1500)}
     sections.push(failureLines.join('\n'));
   }
 
+  // 4c2. Feedback Jam context — user tested a completed goal and reported it's still broken
+  if (goal.feedbackJamId) {
+    const feedbackJamId = goal.feedbackJamId;
+    const feedbackLines: string[] = ['## User Feedback (post-completion)'];
+    feedbackLines.push('The previous fix was deployed but the user reported it is still broken.');
+    feedbackLines.push(`Feedback Jam: https://jam.dev/c/${feedbackJamId}`);
+    feedbackLines.push('');
+    feedbackLines.push('Use mcp__jam__getDetails, mcp__jam__getConsoleLogs, and mcp__jam__getNetworkRequests');
+    feedbackLines.push(`with Jam ID \`${feedbackJamId}\` to understand what the user experienced.`);
+    feedbackLines.push('');
+    feedbackLines.push('Your previous attempt may have partially worked — check what changed and focus on what is still broken.');
+    sections.push(feedbackLines.join('\n'));
+  }
+
   // 4d. Branch continuity — tell agent to check for prior work on the goal branch
   const goalBranchName = `goal/${goal.id}`;
   if ((goal.attemptCount || 0) > 0) {
@@ -288,8 +441,9 @@ Build on existing commits rather than starting from scratch. Only revert if the 
       if (existsSync(stylePath) && (archetype === 'frontend' || archetype === 'ux-consolidation' || archetype === 'design-research' || isUI)) {
         const styleContent = readFileSync(stylePath, 'utf-8').trim();
         if (styleContent) {
-          const trimmed = styleContent.length > 2000
-            ? styleContent.slice(0, 2000) + '\n...(truncated)'
+          const styleLimit = TIER_CONTEXT_LIMITS[modelTier] || 2000;
+          const trimmed = styleContent.length > styleLimit
+            ? styleContent.slice(0, styleLimit) + '\n...(truncated for model tier)'
             : styleContent;
           sections.push(`## STYLE.md — Design System (MUST FOLLOW)
 All UI work MUST conform to the design tokens and patterns defined below.
@@ -343,6 +497,21 @@ Common mistakes to avoid:
 - Read the project's CLAUDE.md first for conventions and patterns
 - NEVER output GOAL_COMPLETE unless ALL acceptance criteria are met
 
+## Verification Loop (mandatory)
+After EACH significant code change, immediately run the relevant check:
+- If you modified a .ts file: run \`npx tsc --noEmit\`
+- If you modified a test: run the specific test file
+- If you modified an API route: curl it to confirm it works
+- If TEST_COMMANDS are provided: run them BEFORE signaling GOAL_COMPLETE
+Verify incrementally — fix failures before moving on. Do NOT batch all verification to the end.
+
+## Self-Review Before Completion
+Before signaling GOAL_COMPLETE, review your own work:
+1. Re-read the goal description — did you address every requirement?
+2. Check your git diff (\`git diff main..HEAD\`) — are there unintended changes or debug artifacts?
+3. Run TEST_COMMANDS one final time if they exist
+4. List anything you're uncertain about in the BROKEN section of your debrief
+
 ## Required Output
 Before GOAL_COMPLETE, output this debrief:
 
@@ -390,25 +559,6 @@ GOAL_COMPLETE`);
   }
 
   const prompt = sections.join('\n\n');
-
-  // Select model using intelligent router
-  let modelDecision;
-  try {
-    const budgetData = getRealBudgetData();
-    modelDecision = selectModel(goal, {
-      budgetRemainingUsd: 100 - budgetData.todayUsd,
-      archetype,
-    });
-  } catch (e) {
-    log.swallow('select-model', e);
-    modelDecision = {
-      model: 'primary' as const,
-      reasoning: 'router error',
-      estimatedCostUsd: 0.79,
-      confidence: 0.5,
-      fallbackModel: 'primary' as const,
-    };
-  }
 
   return {
     prompt,

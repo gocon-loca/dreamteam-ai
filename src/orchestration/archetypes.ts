@@ -50,11 +50,10 @@ const ARCHETYPES: Record<AgentArchetype, ArchetypeConfig> = {
     description: 'UI/UX work: pages, components, styling, layouts',
     contextDocs: ['DESIGN.md', 'STYLE_GUIDE.md', 'COMPONENT_GUIDE.md'],
     promptAdditions: `## Frontend Agent Guidelines
-- Do NOT modify data models, database migrations, service/pipeline modules, or CLI scripts
-- Your work is limited to: templates, components, stylesheets, layouts, and route handlers that render pages
-- Do NOT touch files in models/, services/, pipelines/, migrations/, or db/ directories
+- Your scope is: templates, components, stylesheets, layouts, and route handlers that render pages
+- Only modify files in the presentation layer (templates/, components/, pages/, styles/, routes that render views)
 - Before building, look at adjacent pages/components in the project for design patterns
-- Match existing spacing, fonts, and color patterns — don't introduce new design tokens
+- Match existing spacing, fonts, and color patterns — reuse existing design tokens
 - For React/Next: prefer existing component library over custom elements
 - Verify your changes visually before declaring GOAL_COMPLETE`,
     modelPreference: 'secondary',
@@ -67,15 +66,14 @@ const ARCHETYPES: Record<AgentArchetype, ArchetypeConfig> = {
     description: 'API, database, server-side logic',
     contextDocs: ['API.md', 'SCHEMA.md', 'DATABASE.md'],
     promptAdditions: `## Backend Agent Guidelines
-- Do NOT modify any template files, HTML, CSS, or route handlers that render pages
-- Your work is limited to: data models, services, pipelines, CLI scripts, and tests
-- Do NOT touch files in templates/, static/, or any file containing render/template calls
+- Your scope is: data models, services, pipelines, CLI scripts, API routes, and tests
+- Only modify files in the data/logic layer (models/, services/, pipelines/, api/, db/, tests/)
 - Run tests before AND after changes to catch regressions
 - Check for existing test patterns before writing new tests
 - Validate API contracts match expected request/response shapes
-- Be cautious with database migrations — always test rollback
-- Log meaningful errors, not stack traces
-- Verification: unit tests and API-level checks only — no browser/Playwright testing`,
+- Test database migration rollback before committing schema changes
+- Log meaningful errors with context, not raw stack traces
+- Verification: unit tests and API-level checks only — use curl for endpoint checks`,
     modelPreference: 'secondary',
     useSequentialThinking: false,
     allowedTools: ['mcp__thinking__sequentialthinking'],
@@ -131,11 +129,11 @@ const ARCHETYPES: Record<AgentArchetype, ArchetypeConfig> = {
     description: 'CI/CD, infrastructure, deployment, configuration',
     contextDocs: ['DEPLOYMENT.md', 'INFRA.md'],
     promptAdditions: `## DevOps Agent Guidelines
-- Be extra cautious with configuration changes — test in isolation first
-- Never hardcode secrets or sensitive values
-- Verify changes don't break existing pipelines before committing
+- Test configuration changes in isolation before applying broadly
+- Store secrets in environment variables or secret managers — always use references, not literals
+- Verify existing pipelines still pass after your changes
 - Document any new environment variables or configuration requirements
-- Consider rollback scenarios for infrastructure changes`,
+- Plan rollback scenarios for infrastructure changes before applying them`,
     modelPreference: 'secondary',
     useSequentialThinking: false,
     allowedTools: [],
@@ -168,10 +166,10 @@ const ARCHETYPES: Record<AgentArchetype, ArchetypeConfig> = {
 You are a UX consolidation specialist. Your goal is to simplify the app's navigation and reduce feature bloat.
 
 Rules:
-- REMOVE empty or placeholder pages entirely — don't try to "fill" them
-- MERGE pages that serve nearly identical purposes into a single, cleaner page
-- SIMPLIFY navigation — fewer top-level items is always better
-- Preserve all WORKING functionality — consolidation means reorganizing, not deleting features
+- Remove empty or placeholder pages entirely — consolidate into real content pages
+- Merge pages that serve nearly identical purposes into a single, cleaner page
+- Simplify navigation — fewer top-level items is always better
+- Preserve all working functionality — consolidation means reorganizing, not deleting features
 - Update all navigation links/routes after consolidation
 - Run the app and visually verify the result`,
     modelPreference: 'secondary',

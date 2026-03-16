@@ -16,7 +16,7 @@ import { existsSync } from 'fs';
 
 const SLACK_CLIENT_PATH = process.env.DREAMTEAM_SLACK_CLIENT_PATH || '';
 const SLACK_CHANNEL = process.env.DREAMTEAM_SLACK_CHANNEL || 'product';
-const SLACK_AGENT_NAME = process.env.DREAMTEAM_SLACK_AGENT || 'dreamteam';
+const SLACK_AGENT_NAME = process.env.DREAMTEAM_SLACK_AGENT || 'dreamdevteam';
 const ENABLED = process.env.DREAMTEAM_SLACK_NOTIFY !== '0';
 
 let _available: boolean | null = null;
@@ -51,12 +51,48 @@ export function sendSlackNotification(message: string, channel?: string): void {
   }
 }
 
+export interface SlackCompletionInfo {
+  tunnelUrl?: string;
+  jamId?: string;
+  model?: string;
+  durationMin?: number;
+  whatChanged?: string;
+}
+
 /**
- * Notify Slack about a completed goal.
+ * Notify Slack about a completed goal with rich context.
+ * Includes tunnel URL for testing, Jam link for bug-sourced goals,
+ * and a call-to-action for feedback.
  */
-export function notifyGoalComplete(project: string, title: string, goalId: string, costUsd?: number): void {
+export function notifyGoalComplete(
+  project: string,
+  title: string,
+  goalId: string,
+  costUsd?: number,
+  info?: SlackCompletionInfo,
+): void {
   const cost = costUsd ? ` ($${costUsd.toFixed(2)})` : '';
-  sendSlackNotification(`✅ *[${project}]* Goal completed${cost}\n${title}\nID: \`${goalId}\``);
+  const lines: string[] = [];
+  lines.push(`✅ *[${project}]* Goal completed${cost}`);
+  lines.push(title);
+
+  if (info?.whatChanged) {
+    lines.push(`\n📝 ${info.whatChanged}`);
+  }
+
+  if (info?.tunnelUrl) {
+    lines.push(`\n🔗 *Test it:* ${info.tunnelUrl}`);
+  }
+
+  if (info?.jamId) {
+    lines.push(`🎬 *Original Jam:* https://jam.dev/c/${info.jamId}`);
+  }
+
+  if (info?.tunnelUrl || info?.jamId) {
+    lines.push('\nIf broken → record a Jam and post it here. Sable and the team will break down the feedback.');
+  }
+
+  sendSlackNotification(lines.join('\n'));
 }
 
 /**
