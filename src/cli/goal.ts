@@ -9,6 +9,10 @@
  *   pnpm goal status
  */
 
+// Load .env so Slack notifications work from CLI
+import { config } from 'dotenv';
+config();
+
 import { addGoal, updateGoal, getGoal, getAllGoals, getGoalsSummary } from '../orchestration/goal-manager.js';
 import { listProjectNames } from '../projects/registry.js';
 
