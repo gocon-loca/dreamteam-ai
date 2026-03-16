@@ -14,20 +14,23 @@
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 
-const SLACK_CLIENT_PATH = process.env.DREAMTEAM_SLACK_CLIENT_PATH || '';
-const SLACK_CHANNEL = process.env.DREAMTEAM_SLACK_CHANNEL || 'product';
-const SLACK_AGENT_NAME = process.env.DREAMTEAM_SLACK_AGENT || 'dreamdevteam';
-const ENABLED = process.env.DREAMTEAM_SLACK_NOTIFY !== '0';
-
-let _available: boolean | null = null;
+// Read env vars lazily (not at import time) so dotenv has a chance to load first
+function getConfig() {
+  return {
+    clientPath: process.env.DREAMTEAM_SLACK_CLIENT_PATH || '',
+    channel: process.env.DREAMTEAM_SLACK_CHANNEL || 'development',
+    agentName: process.env.DREAMTEAM_SLACK_AGENT || 'dreamdevteam',
+    enabled: process.env.DREAMTEAM_SLACK_NOTIFY !== '0',
+  };
+}
 
 function isAvailable(): boolean {
-  if (_available !== null) return _available;
-  _available = ENABLED && existsSync(SLACK_CLIENT_PATH);
-  if (!_available) {
-    console.log('[slack-notify] Slack notifications disabled (client not found or DREAMTEAM_SLACK_NOTIFY=0)');
+  const cfg = getConfig();
+  const available = cfg.enabled && existsSync(cfg.clientPath);
+  if (!available) {
+    console.log(`[slack-notify] Slack notifications disabled (client=${cfg.clientPath ? 'found' : 'not found'}, enabled=${cfg.enabled})`);
   }
-  return _available;
+  return available;
 }
 
 /**
@@ -38,11 +41,12 @@ export function sendSlackNotification(message: string, channel?: string): void {
   if (!isAvailable()) return;
 
   try {
-    const ch = channel || SLACK_CHANNEL;
+    const cfg = getConfig();
+    const ch = channel || cfg.channel;
     // Escape message for shell
     const escaped = message.replace(/'/g, "'\\''");
     execSync(
-      `python3 '${SLACK_CLIENT_PATH}' post ${SLACK_AGENT_NAME} ${ch} '${escaped}'`,
+      `python3 '${cfg.clientPath}' post ${cfg.agentName} ${ch} '${escaped}'`,
       { timeout: 10_000, stdio: 'pipe' }
     );
   } catch (e) {
