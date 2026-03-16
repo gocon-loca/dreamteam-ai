@@ -108,3 +108,26 @@ export function notifyGoalRejected(project: string, title: string, reason: strin
 export function notifyGoalBlocked(project: string, title: string, reason: string): void {
   sendSlackNotification(`⚠️ *[${project}]* Goal blocked\n${title}\nWhy: ${reason.slice(0, 200)}`);
 }
+
+/**
+ * Notify Slack about a newly received goal — for founder acceptance.
+ * Tags founders and Morgan so they can review before execution begins.
+ * Goal stays pending until a founder says "override acceptance" or approves.
+ */
+export function notifyGoalReceived(
+  project: string,
+  title: string,
+  goalId: string,
+  description?: string,
+): void {
+  const lines: string[] = [];
+  lines.push(`📋 *[${project}]* New goal received — awaiting acceptance`);
+  lines.push(`*${title}*`);
+  if (description) {
+    lines.push(`\n${description.slice(0, 500)}`);
+  }
+  lines.push(`\nID: \`${goalId}\``);
+  lines.push(`\n<@U0ALHQ6KZA7> <@U0AL8NFQ2JK> <@U0ALMD19NN9> — review and :thumbsup: to approve, or reply with clarifications.`);
+  lines.push(`Say "override acceptance" to skip review and let DreamTeam run immediately.`);
+  sendSlackNotification(lines.join('\n'));
+}

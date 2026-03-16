@@ -251,6 +251,14 @@ export function addGoal(
   // Sync to Linear (non-blocking)
   syncToLinear(goal).catch(() => {});
 
+  // Notify Slack #development — founders review before execution
+  try {
+    const { notifyGoalReceived } = require('../comms/slack-notify');
+    notifyGoalReceived(project, title, goal.id, description);
+  } catch (e) {
+    // Best-effort — don't break goal creation for Slack
+  }
+
   return goal;
 }
 
