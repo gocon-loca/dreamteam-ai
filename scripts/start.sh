@@ -16,6 +16,13 @@ DATA_DIR="$PROJECT_DIR/data"
 PID_FILE="$DATA_DIR/.dreamteam-pids"
 mkdir -p "$LOGS_DIR" "$DATA_DIR"
 
+# Load .env if it exists (for Slack integration, custom paths, etc.)
+if [ -f "$PROJECT_DIR/.env" ]; then
+  set -a
+  source "$PROJECT_DIR/.env"
+  set +a
+fi
+
 echo "Building..."
 cd "$PROJECT_DIR" && pnpm build
 
