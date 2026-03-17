@@ -387,13 +387,27 @@ async function handleCompletedGoal(item: WorkItem): Promise<void> {
       lines.push(`\n🎬 https://jam.dev/c/${jamId}`);
     }
 
-    // Include project page URL for quick visual review
-    try {
-      const projectConfig = getProject(item.project);
-      if (projectConfig?.healthCheck && !tunnelUrl) {
-        lines.push(`\n🌐 ${projectConfig.healthCheck}`);
-      }
-    } catch (e) { slog.swallow('get-project-health-check-url', e); }
+    // Include project page URL for quick visual review (Tailscale-aware)
+    if (!tunnelUrl) {
+      try {
+        const projectConfig = getProject(item.project);
+        if (projectConfig?.devPort) {
+          // getTunnelUrl already tries Tailscale, but if it failed and we have a port,
+          // just build the URL directly — healthCheck is localhost and useless from phone
+          const { execSync } = await import('child_process');
+          try {
+            const tsIp = execSync('tailscale ip -4 2>/dev/null', { timeout: 3000 }).toString().trim();
+            if (tsIp && /^\d+\.\d+\.\d+\.\d+$/.test(tsIp)) {
+              tunnelUrl = `http://${tsIp}:${projectConfig.devPort}`;
+              lines.push(`\n🔗 ${tunnelUrl}`);
+            }
+          } catch { /* tailscale not available */ }
+        }
+        if (!tunnelUrl && projectConfig?.healthCheck) {
+          lines.push(`\n🌐 ${projectConfig.healthCheck}`);
+        }
+      } catch (e) { slog.swallow('get-project-health-check-url', e); }
+    }
 
     if (checklist) lines.push(`\n📋 Manual test checklist:\n${checklist}`);
     lines.push(`\nReact 👍 to approve or 👎 to request changes`);
