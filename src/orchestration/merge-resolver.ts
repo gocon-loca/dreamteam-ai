@@ -56,6 +56,8 @@ function sanitizeTitle(title: string): string {
   return title.replace(/"/g, '\\"').slice(0, 60);
 }
 
+import { getNeutralTimestampEnv } from '../utils/git-timestamps.js';
+
 function abortMerge(cwd: string): void {
   try {
     execSync('git merge --abort', { cwd, encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] });
@@ -102,7 +104,7 @@ function tryCleanMerge(cwd: string, featureBranch: string, title: string): Merge
   try {
     execSync(
       `git merge ${featureBranch} --no-ff -m "merge: ${sanitizeTitle(title)}"`,
-      { cwd, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
+      { cwd, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...getNeutralTimestampEnv() } },
     );
     console.log(`[MergeResolver] Tier 1 (clean merge) succeeded for ${featureBranch}`);
     return { success: true, tier: 'clean' };
@@ -119,7 +121,7 @@ function tryAutoResolve(cwd: string, featureBranch: string, title: string): Merg
   try {
     execSync(
       `git merge ${featureBranch} --no-ff -m "merge: ${sanitizeTitle(title)}" -X theirs`,
-      { cwd, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] },
+      { cwd, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...getNeutralTimestampEnv() } },
     );
     console.log(`[MergeResolver] Tier 2 (auto-resolve -X theirs) succeeded for ${featureBranch}`);
     return { success: true, tier: 'auto-resolve' };
@@ -142,7 +144,7 @@ function tryAiResolve(cwd: string, featureBranch: string, title: string): MergeR
     // If this succeeds without error, there are no conflicts — commit and done
     execSync(
       `git commit -m "merge: ${sanitizeTitle(title)}"`,
-      { cwd, encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] },
+      { cwd, encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...getNeutralTimestampEnv() } },
     );
     console.log(`[MergeResolver] Tier 3 (ai-resolve) — no conflicts after --no-commit, committed`);
     return { success: true, tier: 'ai-resolve', filesResolved: [] };
@@ -232,7 +234,7 @@ ${content}`;
   try {
     execSync(
       `git commit -m "merge: ${sanitizeTitle(title)} (AI-resolved conflicts)"`,
-      { cwd, encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] },
+      { cwd, encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...getNeutralTimestampEnv() } },
     );
     console.log(`[MergeResolver] Tier 3 (ai-resolve) succeeded — resolved ${resolved.length} file(s)`);
     return { success: true, tier: 'ai-resolve', filesResolved: resolved };

@@ -10,6 +10,7 @@ import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { acquireGitLock } from '../utils/git-lock.js';
+import { getNeutralTimestampEnv } from '../utils/git-timestamps.js';
 import {
   isLinearEnabled,
   postStructuredComment,
@@ -460,7 +461,7 @@ export async function runPostCompletionHooks(
                   cwd: project.path, encoding: 'utf8', timeout: 30000,
                 });
                 execSync(`git commit -m "revert: smoke test failed for ${goal.title.replace(/"/g, '\\"').slice(0, 60)}"`, {
-                  cwd: project.path, encoding: 'utf8', timeout: 10000,
+                  cwd: project.path, encoding: 'utf8', timeout: 10000, env: { ...process.env, ...getNeutralTimestampEnv() },
                 });
                 log.info(`Reverted ${commitCount} commits on branch after smoke test failure`);
               } catch (e) {
