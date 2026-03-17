@@ -21,7 +21,35 @@ function getConfig() {
     channel: process.env.DREAMTEAM_SLACK_CHANNEL || 'development',
     agentName: process.env.DREAMTEAM_SLACK_AGENT || 'dreamdevteam',
     enabled: process.env.DREAMTEAM_SLACK_NOTIFY !== '0',
+    // Comma-separated Slack user IDs to tag on review concerns and goal approvals
+    reviewerIds: process.env.DREAMTEAM_SLACK_REVIEWER_IDS || '',
   };
+}
+
+/**
+ * Get the Slack channel to use for review notifications about a specific project.
+ * Configured via DREAMTEAM_SLACK_REVIEW_CHANNELS env var:
+ *   DREAMTEAM_SLACK_REVIEW_CHANNELS=myapp:dev-channel,other:ops-channel
+ * Falls back to the default channel if no project-specific mapping exists.
+ */
+function getReviewChannel(project: string): string | undefined {
+  const raw = process.env.DREAMTEAM_SLACK_REVIEW_CHANNELS || '';
+  if (!raw) return undefined;
+  for (const entry of raw.split(',')) {
+    const [proj, channel] = entry.split(':').map(s => s.trim());
+    if (proj === project && channel) return channel;
+  }
+  return undefined;
+}
+
+/**
+ * Format reviewer mention tags from env config.
+ * Returns a string like "<@U123> <@U456>" or empty string if not configured.
+ */
+function getReviewerTags(): string {
+  const cfg = getConfig();
+  if (!cfg.reviewerIds) return '';
+  return cfg.reviewerIds.split(',').map(id => `<@${id.trim()}>`).join(' ');
 }
 
 function isAvailable(): boolean {
@@ -114,6 +142,62 @@ export function notifyGoalBlocked(project: string, title: string, reason: string
 }
 
 /**
+ * Notify Slack about a goal that was blocked by review concerns.
+ * Posts to a project-specific channel so founders can provide input.
+ * Falls back to the default channel if no project mapping exists.
+ */
+export function notifyReviewConcern(
+  project: string,
+  title: string,
+  goalId: string,
+  feedback: string,
+  issues: Array<{ severity: string; type: string; detail: string; file?: string; line?: number }>,
+): void {
+  const channel = getReviewChannel(project);
+  const reviewers = getReviewerTags();
+  const lines: string[] = [];
+  lines.push(`:warning: *[${project}]* Goal blocked by review — needs input`);
+  lines.push(`*${title}*`);
+  lines.push(`ID: \`${goalId}\``);
+  lines.push(`\n*Review feedback:* ${feedback.slice(0, 500)}`);
+  if (issues.length > 0) {
+    lines.push(`\n*Issues found (${issues.length}):*`);
+    for (const issue of issues.slice(0, 5)) {
+      const loc = issue.file ? ` \`${issue.file}${issue.line ? `:${issue.line}` : ''}\`` : '';
+      lines.push(`  • [${issue.severity}] ${issue.type}: ${issue.detail.slice(0, 150)}${loc}`);
+    }
+    if (issues.length > 5) {
+      lines.push(`  _...and ${issues.length - 5} more_`);
+    }
+  }
+  lines.push(`\nGoal is re-queued for retry. The next attempt will include this feedback.`);
+  if (reviewers) {
+    lines.push(`${reviewers} — reply in thread if you want to adjust the spec.`);
+  }
+  sendSlackNotification(lines.join('\n'), channel);
+}
+
+/**
+ * Notify Slack about a goal that failed TEST_COMMANDS.
+ */
+export function notifyTestCommandFailure(
+  project: string,
+  title: string,
+  goalId: string,
+  failureMsg: string,
+): void {
+  const channel = getReviewChannel(project);
+  const lines: string[] = [];
+  lines.push(`:x: *[${project}]* Goal failed acceptance tests`);
+  lines.push(`*${title}*`);
+  lines.push(`ID: \`${goalId}\``);
+  lines.push(`\n*TEST_COMMANDS output:*`);
+  lines.push(`\`\`\`${failureMsg.slice(0, 800)}\`\`\``);
+  lines.push(`\nGoal is re-queued for retry with this failure context.`);
+  sendSlackNotification(lines.join('\n'), channel);
+}
+
+/**
  * Notify Slack about a newly received goal — for founder acceptance.
  * Tags founders and Morgan so they can review before execution begins.
  * Goal stays pending until a founder says "override acceptance" or approves.
@@ -131,7 +215,10 @@ export function notifyGoalReceived(
     lines.push(`\n${description.slice(0, 500)}`);
   }
   lines.push(`\nID: \`${goalId}\``);
-  lines.push(`\n<@U0ALHQ6KZA7> <@U0AL8NFQ2JK> <@U0ALMD19NN9> — review and :thumbsup: to approve, or reply with clarifications.`);
+  const tags = getReviewerTags();
+  if (tags) {
+    lines.push(`\n${tags} — review and :thumbsup: to approve, or reply with clarifications.`);
+  }
   lines.push(`Say "override acceptance" to skip review and let DreamTeam run immediately.`);
   sendSlackNotification(lines.join('\n'));
 }

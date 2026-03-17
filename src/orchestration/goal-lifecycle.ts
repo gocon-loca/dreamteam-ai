@@ -29,6 +29,7 @@ import { smartMerge } from './merge-resolver.js';
 import { runPostPushReactions } from './post-push-reactions.js';
 import { scanBranchForSecrets, formatSecretFindings } from './secret-scanner.js';
 import { isJamSourced, runBehavioralVerification } from './behavioral-verify.js';
+import { notifyReviewConcern, notifyTestCommandFailure } from '../comms/slack-notify.js';
 
 import { getGoal, updateGoal } from './goal-crud.js';
 import { validateCompletion } from './goal-validation.js';
@@ -139,17 +140,15 @@ export async function runPostCompletionHooks(
     }
   }
 
-  // Gate 0.5: TEST_COMMANDS — ADVISORY mode.
-  // Results are logged and included in review context, but do NOT hard-reject.
-  // Fragile shell one-liners (grep patterns, path assumptions) caused cascading
-  // false rejections that tripped circuit breakers and stalled entire projects.
-  // The review agent and smoke test are better quality signals.
+  // Gate 0.5: TEST_COMMANDS — BLOCKING mode.
+  // If a goal description includes TEST_COMMANDS, they represent author-defined
+  // acceptance criteria. Failed test commands = rejection (set back to pending).
   let testCommandWarnings: string | undefined;
   const gate05Span = trace.span('gate-0.5-test-commands');
   try {
     const testCommands = parseTestCommands(goal.description || '');
     if (testCommands.length > 0 && verifyPath) {
-      log.info(`Running ${testCommands.length} TEST_COMMANDS for "${goal.title}"${worktreeCreated ? ' (worktree)' : ''} [advisory mode]`);
+      log.info(`Running ${testCommands.length} TEST_COMMANDS for "${goal.title}"${worktreeCreated ? ' (worktree)' : ''} [blocking mode]`);
       const testResults = await runTestCommands(verifyPath, testCommands, {
         originalProjectPath: project?.path || undefined,
       });
@@ -157,10 +156,29 @@ export async function runPostCompletionHooks(
 
       if (failures.length > 0) {
         const failureMsg = formatTestCommandFailures(testResults);
-        log.info(`TEST_COMMANDS advisory failures for "${goal.title}": ${failureMsg}`);
-        testCommandWarnings = `TEST_COMMANDS (advisory): ${failureMsg}`.slice(0, 2000);
+        log.info(`TEST_COMMANDS REJECTED "${goal.title}": ${failureMsg}`);
+        log.info(`Keeping commits on branch — next agent will continue from here`);
+
+        updateGoal(goalId, {
+          status: 'pending',
+          completedAt: undefined,
+          lastRejectionReason: `TEST_COMMANDS failed (${failures.length}/${testResults.length}): ${failureMsg}`.slice(0, 2000),
+          output: agentOutput.slice(-5000),
+        });
         recordLesson(goal, 'TEST_COMMANDS', failureMsg);
-        gate05Span.end({ verdict: 'advisory-fail', failures: failures.length });
+
+        gate05Span.end({ verdict: 'reject', failures: failures.length });
+        trace.update({ statusMessage: 'rejected:test-commands' });
+        trace.end();
+
+        // Notify Slack so founders can see what failed
+        try { notifyTestCommandFailure(goal.project, goal.title, goalId, failureMsg); } catch (e) { log.swallow('slack-test-cmd-notify', e); }
+
+        // Clean up worktree before returning
+        if (worktreeCreated && project?.path) {
+          try { execSync(`git worktree remove /tmp/verify-${goalId} --force`, { cwd: project.path, timeout: 10000, stdio: 'pipe' }); } catch (e) { log.swallow('remove-worktree-after-test-reject', e); }
+        }
+        return null;
       } else {
         log.info(`TEST_COMMANDS passed: ${testResults.length}/${testResults.length}`);
         gate05Span.end({ verdict: 'pass', commandCount: testCommands.length });
@@ -291,16 +309,22 @@ export async function runPostCompletionHooks(
     }
 
     if (reviewResult.verdict === 'concern') {
-      // For user-reported, Jam-sourced, and direct user feedback goals, 'concern' is blocking.
-      // For internal sources (system, design-research, pm-sweep), it's advisory.
+      // Concern is BLOCKING for complex/fullstack goals and user-facing sources.
+      // Only advisory for trivial internal goals (docs, pm-sweep, design-research).
+      const isComplexGoal = (goal.complexity === 'complex')
+        || (effectiveArchetype === 'fullstack')
+        || (effectiveArchetype === 'backend')
+        || (effectiveArchetype === 'frontend');
       const isUserFacingSource = goal.source === 'jam'
         || goal.source?.startsWith('jam:')
         || goal.source === 'user-feedback'
         || goal.source === 'user'
-        || goal.source === 'feedback'; // set by feedback-processor.ts for Director-created feedback goals
+        || goal.source === 'feedback'
+        || goal.source === 'cli';
+      const shouldBlock = isComplexGoal || isUserFacingSource;
 
-      if (isUserFacingSource) {
-        log.info(`REVIEW CONCERN (BLOCKING) "${goal.title}" (${reviewResult.backend}) [source: ${goal.source}]: ${reviewResult.feedback}`);
+      if (shouldBlock) {
+        log.info(`REVIEW CONCERN (BLOCKING) "${goal.title}" (${reviewResult.backend}) [source: ${goal.source}, complexity: ${goal.complexity}, archetype: ${effectiveArchetype}]: ${reviewResult.feedback}`);
         log.info(`Keeping commits on branch — next agent will continue from here`);
 
         const issueDetails = reviewResult.issues
@@ -319,13 +343,17 @@ export async function runPostCompletionHooks(
         });
         recordLesson(goal, `review-concern-${reviewResult.backend || 'unknown'}`, reviewResult.feedback);
 
-        gate1Span.end({ verdict: 'reject', backend: reviewResult.backend, issueCount: reviewResult.issues.length, reason: 'user-facing-concern' });
+        gate1Span.end({ verdict: 'reject', backend: reviewResult.backend, issueCount: reviewResult.issues.length, reason: shouldBlock ? 'complex-or-user-concern' : 'user-facing-concern' });
         trace.update({ statusMessage: 'rejected:review-concern' });
         trace.end();
+
+        // Notify Slack so founders can see concerns and provide input
+        try { notifyReviewConcern(goal.project, goal.title, goalId, reviewResult.feedback, reviewResult.issues); } catch (e) { log.swallow('slack-review-concern-notify', e); }
+
         return null;
       } else {
-        // Internal sources: 'concern' is advisory only
-        log.info(`REVIEW CONCERN (ADVISORY) "${goal.title}" (${reviewResult.backend}) [source: ${goal.source}]: ${reviewResult.feedback}`);
+        // Trivial internal goals: 'concern' is advisory only
+        log.info(`REVIEW CONCERN (ADVISORY) "${goal.title}" (${reviewResult.backend}) [source: ${goal.source}, complexity: ${goal.complexity}]: ${reviewResult.feedback}`);
         debrief.reviewConcerns = reviewResult.feedback;
       }
     }
