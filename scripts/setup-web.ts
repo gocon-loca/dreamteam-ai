@@ -371,6 +371,47 @@ app.post('/api/detect-project', async (c) => {
   return c.json(result);
 });
 
+// Test Slack bot token
+app.post('/api/test-slack', async (c) => {
+  const body = await c.req.json();
+  const token: string = body.token || '';
+  const channel: string = body.channel || 'general';
+
+  if (!token) {
+    return c.json({ success: false, error: 'No token provided' });
+  }
+
+  try {
+    const resp = await fetch('https://slack.com/api/auth.test', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      return c.json({
+        success: true,
+        team: data.team,
+        user: data.user,
+        userId: data.user_id,
+      });
+    } else {
+      return c.json({
+        success: false,
+        error: data.error || 'Invalid token',
+      });
+    }
+  } catch (e: any) {
+    return c.json({
+      success: false,
+      error: e.message || 'Network error',
+    });
+  }
+});
+
 // Save all configuration
 app.post('/api/save-config', async (c) => {
   const body = await c.req.json();
@@ -502,11 +543,33 @@ NODE_ENV=development
 TAILSCALE_IP=${body.tailscaleIp || 'localhost'}
 `;
 
+    // Notification channels
+    const messaging = body.messaging || {};
+    const channels = messaging.channels || [];
+    if (channels.length > 0) {
+      envContent += `
+# Notification Channels
+DREAMTEAM_NOTIFICATIONS=${channels.join(',')}
+`;
+    }
+
     if (telegram.token) {
       envContent += `
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=${telegram.token}
 TELEGRAM_ALLOWED_USERS=${telegram.chatId || ''}
+`;
+    }
+
+    const slack = body.slack || {};
+    if (slack.botToken) {
+      envContent += `
+# Slack
+DREAMTEAM_SLACK_CLIENT_PATH=${slack.clientPath || ''}
+DREAMTEAM_SLACK_CHANNEL=${slack.channel || 'development'}
+DREAMTEAM_SLACK_AGENT=${slack.agentName || 'dreamteam'}
+DREAMTEAM_SLACK_REVIEWER_IDS=${slack.reviewerIds || ''}
+DREAMTEAM_SLACK_REVIEW_CHANNELS=${slack.reviewChannels || ''}
 `;
     }
 

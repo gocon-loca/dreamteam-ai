@@ -1241,9 +1241,47 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- Step 4: Telegram Bot                                -->
+    <!-- Step 4: Messaging Channels                          -->
     <!-- ═══════════════════════════════════════════════════ -->
     <div class="step-card" id="step-4" data-step="4">
+      <h2 class="step-title">Messaging Channels</h2>
+      <p class="step-subtitle">Choose how you want to receive notifications and control DreamTeam.</p>
+
+      <div class="instructions" style="margin-bottom:20px">
+        <p style="margin:0 0 12px"><strong>CLI always works</strong> — you can always use <code>pnpm goal add/list</code> from the terminal. These channels add remote control and team notifications.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:500px;margin:0 auto">
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color 0.2s" id="channelTelegramLabel">
+          <input type="checkbox" id="channelTelegram" onchange="updateMessagingChannels()" style="margin-top:2px">
+          <div>
+            <strong>Telegram</strong>
+            <p style="margin:4px 0 0;font-size:13px;color:var(--text-muted)">Mobile bot for commands + notifications. Control DreamTeam from your phone with 25+ bot commands.</p>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color 0.2s" id="channelSlackLabel">
+          <input type="checkbox" id="channelSlack" onchange="updateMessagingChannels()" style="margin-top:2px">
+          <div>
+            <strong>Slack</strong>
+            <p style="margin:4px 0 0;font-size:13px;color:var(--text-muted)">Team notifications in your workspace. Goal completions, review concerns, and test failures posted to channels. Supports agent personas.</p>
+          </div>
+        </label>
+      </div>
+
+      <div id="messagingNote" style="margin-top:16px;font-size:13px;color:var(--text-muted);text-align:center">
+        You can always add channels later by editing <code>.env</code>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(3)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(5)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 5: Telegram Bot                                -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-5" data-step="5">
       <h2 class="step-title">Telegram Bot</h2>
       <p class="step-subtitle">Connect a Telegram bot for remote control and notifications.</p>
 
@@ -1282,15 +1320,72 @@
       </div>
 
       <div class="nav-buttons">
-        <button class="btn" onclick="goToStep(3)"><span style="margin-right:2px">&#8592;</span> Back</button>
-        <button class="btn btn-primary" onclick="goToStep(5)">Next <span style="margin-left:2px">&#8594;</span></button>
+        <button class="btn" onclick="goToStep(4)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(6)">Next <span style="margin-left:2px">&#8594;</span></button>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- Step 5: Projects                                    -->
+    <!-- Step 6: Slack Setup                                 -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div class="step-card" id="step-5" data-step="5">
+    <div class="step-card" id="step-6" data-step="6">
+      <h2 class="step-title">Slack Setup</h2>
+      <p class="step-subtitle">Connect Slack for team notifications.</p>
+
+      <div class="instructions">
+        <ol>
+          <li>Create a Slack app at <a href="https://api.slack.com/apps" target="_blank">api.slack.com/apps</a></li>
+          <li>Add bot scopes: <code>chat:write</code>, <code>chat:write.customize</code>, <code>reactions:write</code></li>
+          <li>Install the app to your workspace</li>
+          <li>Copy the Bot User OAuth Token (<code>xoxb-...</code>)</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Bot Token</label>
+        <div style="display:flex;gap:10px">
+          <input type="text" class="form-input mono" id="slackToken" placeholder="xoxb-...">
+          <button class="btn btn-sm" id="testSlackBtn" onclick="testSlack()">Test Connection</button>
+          <span id="testSlackSpinner" style="display:none"><span class="spinner spinner-sm"></span></span>
+        </div>
+      </div>
+
+      <div class="test-result" id="testSlackResult"></div>
+
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Default Channel</label>
+        <input type="text" class="form-input" id="slackChannel" placeholder="development" style="max-width:300px" value="development">
+        <p class="form-hint">Channel name (without #) where goal notifications are posted.</p>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Agent Name</label>
+        <input type="text" class="form-input" id="slackAgent" placeholder="dreamteam" style="max-width:300px" value="dreamteam">
+        <p class="form-hint">The bot identity used when posting. Must match the agent name in your Slack client script.</p>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Reviewer User IDs (optional)</label>
+        <input type="text" class="form-input mono" id="slackReviewerIds" placeholder="U123ABC,U456DEF" style="max-width:400px">
+        <p class="form-hint">Comma-separated Slack user IDs to @-mention on review concerns and new goals.</p>
+      </div>
+
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Slack Client Script Path (optional)</label>
+        <input type="text" class="form-input mono" id="slackClientPath" placeholder="/path/to/slack_client.py" style="max-width:500px">
+        <p class="form-hint">Path to a script that accepts: <code>post &lt;agent&gt; &lt;channel&gt; &lt;message&gt;</code>. Leave blank to use built-in posting (coming soon).</p>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn" onclick="goToStep(5)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(7)">Next <span style="margin-left:2px">&#8594;</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- Step 7: Projects                                    -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="step-card" id="step-7" data-step="7">
       <h2 class="step-title">Projects</h2>
       <p class="step-subtitle">Register the projects DreamTeam will manage. DreamTeam itself is always included.</p>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;padding:10px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);line-height:1.6">
@@ -1318,15 +1413,15 @@
       <button class="btn btn-sm btn-outline" onclick="addProjectRow()">+ Add Project</button>
 
       <div class="nav-buttons">
-        <button class="btn" onclick="goToStep(4)"><span style="margin-right:2px">&#8592;</span> Back</button>
-        <button class="btn btn-primary" onclick="goToStep(6)">Next <span style="margin-left:2px">&#8594;</span></button>
+        <button class="btn" onclick="goToStep(6)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(8)">Next <span style="margin-left:2px">&#8594;</span></button>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- Step 6: Integrations                                -->
+    <!-- Step 8: Integrations                                -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div class="step-card" id="step-6" data-step="6">
+    <div class="step-card" id="step-8" data-step="8">
       <h2 class="step-title">Integrations</h2>
       <p class="step-subtitle">These are optional but recommended. They give DreamTeam superpowers. You can add them later too.</p>
 
@@ -1397,15 +1492,15 @@
       </div>
 
       <div class="nav-buttons">
-        <button class="btn" onclick="goToStep(5)"><span style="margin-right:2px">&#8592;</span> Back</button>
-        <button class="btn btn-primary" onclick="goToStep(7)">Next <span style="margin-left:2px">&#8594;</span></button>
+        <button class="btn" onclick="goToStep(7)"><span style="margin-right:2px">&#8592;</span> Back</button>
+        <button class="btn btn-primary" onclick="goToStep(9)">Next <span style="margin-left:2px">&#8594;</span></button>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════════════ -->
-    <!-- Step 7: Review & Launch                             -->
+    <!-- Step 9: Review & Launch                             -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div class="step-card" id="step-7" data-step="7">
+    <div class="step-card" id="step-9" data-step="9">
       <h2 class="step-title">Review &amp; Save</h2>
       <p class="step-subtitle">Review the generated configuration files before saving.</p>
 
@@ -1439,7 +1534,7 @@
 
       <div id="saveActions">
         <div class="nav-buttons">
-          <button class="btn" onclick="goToStep(6)"><span style="margin-right:2px">&#8592;</span> Back</button>
+          <button class="btn" onclick="goToStep(8)"><span style="margin-right:2px">&#8592;</span> Back</button>
           <div style="display:flex;gap:10px;align-items:center">
             <span id="saveSpinner" style="display:none"><span class="spinner"></span></span>
             <button class="btn btn-success" id="saveBtn" onclick="saveConfig()">Save Configuration</button>
@@ -1486,10 +1581,12 @@
       { id: 1, label: 'Welcome' },
       { id: 2, label: 'Install' },
       { id: 3, label: 'Models' },
-      { id: 4, label: 'Telegram' },
-      { id: 5, label: 'Projects' },
-      { id: 6, label: 'Integrations' },
-      { id: 7, label: 'Review' },
+      { id: 4, label: 'Messaging' },
+      { id: 5, label: 'Telegram' },
+      { id: 6, label: 'Slack' },
+      { id: 7, label: 'Projects' },
+      { id: 8, label: 'Integrations' },
+      { id: 9, label: 'Review' },
     ];
 
     let currentStep = 1;
@@ -1508,11 +1605,22 @@
         costSecondary: 0.25,
         costAncillary: 0.05,
       },
+      messaging: {
+        channels: [],   // ['telegram', 'slack']
+      },
       telegram: {
         token: '',
         chatId: '',
         botName: '',
         botUsername: '',
+      },
+      slack: {
+        botToken: '',
+        channel: 'development',
+        agentName: 'dreamteam',
+        reviewerIds: '',
+        clientPath: '',
+        team: '',
       },
       projects: [],
       integrations: {
@@ -1589,7 +1697,7 @@
       // Step-specific hooks
       if (n === 2) runPrerequisites();
       if (n === 3) updateLadders();
-      if (n === 7) renderReview();
+      if (n === 9) renderReview();
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1605,9 +1713,19 @@
       state.models.costSecondary = parseFloat(document.getElementById('costSecondary').value) || 0;
       state.models.costAncillary = parseFloat(document.getElementById('costAncillary').value) || 0;
 
+      // Messaging channels
+      updateMessagingChannels();
+
       // Telegram
       state.telegram.token = document.getElementById('telegramToken').value.trim();
       state.telegram.chatId = document.getElementById('telegramChatId').value.trim();
+
+      // Slack
+      state.slack.botToken = document.getElementById('slackToken').value.trim();
+      state.slack.channel = document.getElementById('slackChannel').value.trim() || 'development';
+      state.slack.agentName = document.getElementById('slackAgent').value.trim() || 'dreamteam';
+      state.slack.reviewerIds = document.getElementById('slackReviewerIds').value.trim();
+      state.slack.clientPath = document.getElementById('slackClientPath').value.trim();
 
       // Projects from table
       syncProjectsFromTable();
@@ -1986,7 +2104,69 @@
     }
 
     // ═══════════════════════════════════════════════════════
-    // Step 4: Projects
+    // Step 4: Messaging Channels
+    // ═══════════════════════════════════════════════════════
+
+    function updateMessagingChannels() {
+      const channels = [];
+      if (document.getElementById('channelTelegram').checked) channels.push('telegram');
+      if (document.getElementById('channelSlack').checked) channels.push('slack');
+      state.messaging.channels = channels;
+
+      const tgLabel = document.getElementById('channelTelegramLabel');
+      const slLabel = document.getElementById('channelSlackLabel');
+      if (tgLabel) tgLabel.style.borderColor = channels.includes('telegram') ? 'var(--accent)' : 'var(--border)';
+      if (slLabel) slLabel.style.borderColor = channels.includes('slack') ? 'var(--accent)' : 'var(--border)';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 6: Slack Setup
+    // ═══════════════════════════════════════════════════════
+
+    async function testSlack() {
+      const btn = document.getElementById('testSlackBtn');
+      const spinner = document.getElementById('testSlackSpinner');
+      const result = document.getElementById('testSlackResult');
+      const token = document.getElementById('slackToken').value.trim();
+
+      if (!token) {
+        result.className = 'test-result visible error';
+        result.textContent = 'Please enter a bot token first.';
+        return;
+      }
+
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      result.classList.remove('visible');
+
+      try {
+        const resp = await fetch('/api/test-slack', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = await resp.json();
+
+        if (data.success) {
+          result.className = 'test-result visible success';
+          result.textContent = 'Connected to workspace: ' + data.team + ' (as ' + data.user + ')';
+          state.slack.botToken = token;
+          state.slack.team = data.team;
+        } else {
+          result.className = 'test-result visible error';
+          result.textContent = 'Invalid token: ' + (data.error || 'Unknown error');
+        }
+      } catch (err) {
+        result.className = 'test-result visible error';
+        result.textContent = 'Network error: ' + err.message;
+      }
+
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // Step 7: Projects
     // ═══════════════════════════════════════════════════════
 
     function addProjectRow(data) {
@@ -2250,6 +2430,14 @@ SOPS_AGE_KEY_FILE=./config/age-key.txt
 NODE_ENV=development
 TAILSCALE_IP=localhost`;
 
+      // Notification channels
+      if (state.messaging.channels.length > 0) {
+        env += `
+
+# Notification Channels
+DREAMTEAM_NOTIFICATIONS=${state.messaging.channels.join(',')}`;
+      }
+
       if (state.telegram.token) {
         env += `
 
@@ -2270,6 +2458,16 @@ JAM_API_KEY=${state.integrations.jamApiKey}`;
 
 # Linear
 LINEAR_API_KEY=${state.integrations.linearApiKey}`;
+      }
+
+      if (state.slack.botToken) {
+        env += `
+
+# Slack
+DREAMTEAM_SLACK_CLIENT_PATH=${state.slack.clientPath || ''}
+DREAMTEAM_SLACK_CHANNEL=${state.slack.channel || 'development'}
+DREAMTEAM_SLACK_AGENT=${state.slack.agentName || 'dreamteam'}
+DREAMTEAM_SLACK_REVIEWER_IDS=${state.slack.reviewerIds || ''}`;
       }
 
       return env;
@@ -2299,7 +2497,9 @@ LINEAR_API_KEY=${state.integrations.linearApiKey}`;
           body: JSON.stringify({
             models: state.models,
             projects: state.projects,
+            messaging: state.messaging,
             telegram: state.telegram,
+            slack: state.slack,
             integrations: state.integrations,
             tailscaleIp: state.tailscaleIp,
           }),
@@ -2311,7 +2511,7 @@ LINEAR_API_KEY=${state.integrations.linearApiKey}`;
           document.getElementById('saveActions').style.display = 'none';
           document.getElementById('reviewContent').style.display = 'none';
           document.getElementById('successPanel').classList.add('visible');
-          completedSteps.add(6);
+          completedSteps.add(9);
           renderProgressBar();
         } else {
           errEl.textContent = 'Save failed: ' + (data.errors || []).join(', ');
