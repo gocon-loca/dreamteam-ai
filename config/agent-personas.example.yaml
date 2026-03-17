@@ -1,0 +1,51 @@
+# Agent Persona Configuration (EXAMPLE)
+#
+# Copy to config/agent-personas.yaml and customize for your team.
+# agent-personas.yaml is gitignored — your team config stays private.
+#
+# Personas define how DreamTeam posts to Slack. Each persona maps to
+# a Slack agent identity and handles specific event types. Without this
+# file, all notifications post as the default "dreamteam" agent.
+#
+# This integrates with external agent systems (like multi-agent Slack
+# workspaces) where different bot tokens post as different team members.
+#
+# Required env vars:
+#   DREAMTEAM_SLACK_CLIENT_PATH — path to your Slack client script
+#   DREAMTEAM_SLACK_CHANNEL — default notification channel
+#   DREAMTEAM_SLACK_AGENT — default agent name (used when no persona matches)
+
+personas:
+  # Default persona — handles everything not claimed by another persona
+  default:
+    name: dreamteam
+    displayName: "DreamTeam"
+    emoji: ":robot:"
+    # postAs matches the agent name your Slack client uses
+    postAs: dreamteam
+    handles:
+      - goal_complete
+      - goal_rejected
+      - goal_blocked
+
+  # Example: PM persona for review-related events
+  # pm:
+  #   name: pm-agent
+  #   displayName: "PM Agent"
+  #   emoji: ":clipboard:"
+  #   postAs: pm
+  #   handles:
+  #     - goal_received
+  #     - review_concern
+  #     - test_command_failure
+
+  # Example: Ops persona for system events
+  # ops:
+  #   name: ops-agent
+  #   displayName: "Operations"
+  #   emoji: ":gear:"
+  #   postAs: ops
+  #   handles:
+  #     - system_alert
+  #     - budget_alert
+  #     - digest

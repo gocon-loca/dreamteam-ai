@@ -22,6 +22,9 @@ config/keys/
 # MCP config (contains tokens)
 .mcp.json
 
+# Agent persona config (team-specific)
+config/agent-personas.yaml
+
 # IDE
 .idea/
 .vscode/

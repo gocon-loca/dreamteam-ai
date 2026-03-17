@@ -19,6 +19,7 @@ import { existsSync } from 'fs';
 import type { NotificationChannel } from './index.js';
 import type { NotificationEvent } from './types.js';
 import { createLogger } from '../utils/logger.js';
+import { getAgentForEvent } from './persona-router.js';
 
 const log = createLogger('notify:slack');
 
@@ -48,12 +49,13 @@ function getReviewerTags(): string {
   return cfg.reviewerIds.split(',').map(id => `<@${id.trim()}>`).join(' ');
 }
 
-function postToSlack(message: string, channel?: string): void {
+function postToSlack(message: string, channel?: string, agentName?: string): void {
   const cfg = getSlackConfig();
   const ch = channel || cfg.channel;
+  const agent = agentName || cfg.agentName;
   const escaped = message.replace(/'/g, "'\\''");
   execSync(
-    `python3 '${cfg.clientPath}' post ${cfg.agentName} ${ch} '${escaped}'`,
+    `python3 '${cfg.clientPath}' post ${agent} ${ch} '${escaped}'`,
     { timeout: 10_000, stdio: 'pipe' }
   );
 }
@@ -72,7 +74,9 @@ export class SlackNotificationChannel implements NotificationChannel {
     try {
       const { message, channel } = formatForSlack(event);
       if (message) {
-        postToSlack(message, channel);
+        // Use persona router to determine which agent posts this event
+        const agent = getAgentForEvent(event.type);
+        postToSlack(message, channel, agent);
       }
     } catch (err) {
       log.error(`Slack send failed for ${event.type}`, err);
