@@ -29,7 +29,7 @@ import { smartMerge } from './merge-resolver.js';
 import { runPostPushReactions } from './post-push-reactions.js';
 import { scanBranchForSecrets, formatSecretFindings } from './secret-scanner.js';
 import { isJamSourced, runBehavioralVerification } from './behavioral-verify.js';
-import { notifyReviewConcern, notifyTestCommandFailure } from '../comms/slack-notify.js';
+import { notify } from '../notifications/index.js';
 
 import { getGoal, updateGoal } from './goal-crud.js';
 import { validateCompletion } from './goal-validation.js';
@@ -172,7 +172,7 @@ export async function runPostCompletionHooks(
         trace.end();
 
         // Notify Slack so reviewers can see what failed
-        try { notifyTestCommandFailure(goal.project, goal.title, goalId, failureMsg); } catch (e) { log.swallow('slack-test-cmd-notify', e); }
+        notify({ type: 'test_command_failure', project: goal.project, title: goal.title, goalId, failureMsg }).catch(e => log.swallow('notify-test-cmd', e));
 
         // Clean up worktree before returning
         if (worktreeCreated && project?.path) {
@@ -348,7 +348,7 @@ export async function runPostCompletionHooks(
         trace.end();
 
         // Notify Slack so reviewers can see concerns and provide input
-        try { notifyReviewConcern(goal.project, goal.title, goalId, reviewResult.feedback, reviewResult.issues); } catch (e) { log.swallow('slack-review-concern-notify', e); }
+        notify({ type: 'review_concern', project: goal.project, title: goal.title, goalId, feedback: reviewResult.feedback, issues: reviewResult.issues }).catch(e => log.swallow('notify-review-concern', e));
 
         return null;
       } else {

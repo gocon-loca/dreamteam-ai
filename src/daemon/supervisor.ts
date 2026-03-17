@@ -21,6 +21,7 @@ import { config, DATA_DIR, LOGS_DIR, loadSessionLimitState } from './supervisor-
 import { getStatus, setStatus, readControlFile } from './supervisor-state.js';
 import { log, guarded } from './supervisor-utils.js';
 import { initTelegram, sendTelegram } from './supervisor-telegram.js';
+import { autoRegisterChannels } from '../notifications/index.js';
 import { reconcileOnStartup } from './supervisor-reconcile.js';
 import { processCompletedWork } from './supervisor-goals.js';
 import { dispatch } from './supervisor-dispatch.js';
@@ -38,8 +39,8 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 async function startSupervisor(): Promise<void> {
   log('=== Supervisor starting ===');
 
-  // 1. Init Telegram
-  await initTelegram();
+  // 1. Init notification channels (Telegram, Slack, console — based on env config)
+  await autoRegisterChannels();
   log('Supervisor starting. Workers will execute goals independently.');
 
   // 1b. Start health HTTP server

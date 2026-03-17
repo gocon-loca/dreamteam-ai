@@ -251,12 +251,12 @@ export function addGoal(
   // Sync to Linear (non-blocking)
   syncToLinear(goal).catch(() => {});
 
-  // Notify Slack — reviewers see new goals before execution begins
+  // Notify all channels — reviewers see new goals before execution begins
   try {
-    const { notifyGoalReceived } = require('../comms/slack-notify');
-    notifyGoalReceived(project, title, goal.id, description);
+    const { notify } = require('../notifications/index');
+    notify({ type: 'goal_received', project, title, goalId: goal.id, description });
   } catch (e) {
-    // Best-effort — don't break goal creation for Slack
+    // Best-effort — don't break goal creation for notifications
   }
 
   return goal;

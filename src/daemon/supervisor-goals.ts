@@ -49,7 +49,7 @@ import {
 import { log, withTimeout } from './supervisor-utils.js';
 import { sendTelegram } from './supervisor-telegram.js';
 import { recordRateLimitHit } from './supervisor-capacity.js';
-import { notifyGoalComplete, notifyGoalRejected, notifyGoalBlocked, type SlackCompletionInfo } from '../comms/slack-notify.js';
+import { notify } from '../notifications/index.js';
 
 const slog = createLogger('supervisor-goals');
 
@@ -432,19 +432,21 @@ async function handleCompletedGoal(item: WorkItem): Promise<void> {
     details: `${item.model || 'primary'}, attempt ${item.attempt_number}`,
   });
 
-  // Slack notification (best-effort, non-blocking)
+  // Notify all channels (best-effort, non-blocking)
   try {
     if (goalRejected) {
-      notifyGoalRejected(item.project, goal?.title || item.goal_id, 'Review concern — see Telegram for details');
+      notify({ type: 'goal_rejected', project: item.project, title: goal?.title || item.goal_id, goalId: item.goal_id, reason: 'Review concern — see details above' });
     } else {
-      // Build rich completion info for Slack
-      const slackInfo: SlackCompletionInfo = {};
-      if (tunnelUrl) slackInfo.tunnelUrl = tunnelUrl;
-      if (whatChanged) slackInfo.whatChanged = whatChanged;
-      if (goal.source?.startsWith('jam:')) {
-        slackInfo.jamId = goal.source.replace('jam:', '');
-      }
-      notifyGoalComplete(item.project, goal?.title || item.goal_id, item.goal_id, item.cost_usd || undefined, slackInfo);
+      notify({
+        type: 'goal_complete',
+        project: item.project,
+        title: goal?.title || item.goal_id,
+        goalId: item.goal_id,
+        costUsd: item.cost_usd || undefined,
+        tunnelUrl: tunnelUrl || undefined,
+        whatChanged: whatChanged || undefined,
+        jamId: goal.source?.startsWith('jam:') ? goal.source.replace('jam:', '') : undefined,
+      });
     }
   } catch { /* best-effort */ }
 
@@ -494,7 +496,7 @@ async function handleFailedGoal(item: WorkItem): Promise<void> {
       blockGoalWithAudit(item.goal_id, item.project, item.error || 'Unknown blocker', item.result_output ?? undefined);
       trackProjectFailure(item.project, goal?.title);
       await withTimeout(sendTelegram(`⚠️ [${item.project}] ${goal?.title || item.goal_id.slice(0, 8)} — BLOCKED\nWhy: ${(item.error || 'Unknown').slice(0, 200)}`), 10_000, 'sendTelegram(blocked)');
-      try { notifyGoalBlocked(item.project, goal?.title || item.goal_id, item.error || 'Unknown'); } catch { /* best-effort */ }
+      notify({ type: 'goal_blocked', project: item.project, title: goal?.title || item.goal_id, goalId: item.goal_id, reason: item.error || 'Unknown' }).catch(() => {});
     }
   } else if (signal === 'ESCALATE') {
     blockGoalWithAudit(item.goal_id, item.project, item.error || 'Escalated', item.result_output ?? undefined);
