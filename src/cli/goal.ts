@@ -53,7 +53,7 @@ Options for 'add':
   --archetype frontend|backend   Force archetype (default: auto-classified)
 
 Examples:
-  pnpm goal add nlac "Fix broken zoom on nested diagrams"
+  pnpm goal add my-app "Fix broken zoom on nested diagrams"
   pnpm goal add my-api "Add rate limiting to /api/users endpoint" --desc "Add express-rate-limit middleware. Limit: 100 req/15min per IP. TEST_COMMANDS: curl -sf localhost:3001/api/users | head -1"
   pnpm goal add my-web-app "Build user settings page" --complexity complex --archetype frontend
   pnpm goal show goal-abc123

@@ -251,7 +251,7 @@ export function addGoal(
   // Sync to Linear (non-blocking)
   syncToLinear(goal).catch(() => {});
 
-  // Notify Slack #development — founders review before execution
+  // Notify Slack — reviewers see new goals before execution begins
   try {
     const { notifyGoalReceived } = require('../comms/slack-notify');
     notifyGoalReceived(project, title, goal.id, description);

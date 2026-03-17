@@ -95,7 +95,7 @@ That's it. The script installs everything you need (Node.js, pnpm, Claude CLI), 
 > pnpm run setup:web
 > ```
 
-Or try the **[interactive setup wizard](https://dreamteam-deploy.vercel.app)** first to explore before installing.
+Or run `pnpm run setup:web` after cloning to launch the interactive setup wizard locally.
 
 See the **[Setup Guide](docs/SETUP.md)** for detailed instructions at three levels (gentle, streamlined, or developer-fast).
 

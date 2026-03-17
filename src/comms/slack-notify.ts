@@ -121,7 +121,7 @@ export function notifyGoalComplete(
   }
 
   if (info?.tunnelUrl || info?.jamId) {
-    lines.push('\nIf broken → record a Jam and post it here. Sable and the team will break down the feedback.');
+    lines.push('\nIf broken → record a Jam and post it here for the team to review.');
   }
 
   sendSlackNotification(lines.join('\n'));
@@ -143,7 +143,7 @@ export function notifyGoalBlocked(project: string, title: string, reason: string
 
 /**
  * Notify Slack about a goal that was blocked by review concerns.
- * Posts to a project-specific channel so founders can provide input.
+ * Posts to a project-specific channel so reviewers can provide input.
  * Falls back to the default channel if no project mapping exists.
  */
 export function notifyReviewConcern(
@@ -199,7 +199,7 @@ export function notifyTestCommandFailure(
 
 /**
  * Notify Slack about a newly received goal — for founder acceptance.
- * Tags founders and Morgan so they can review before execution begins.
+ * Tags reviewers and the team lead so they can review before execution begins.
  * Goal stays pending until a founder says "override acceptance" or approves.
  */
 export function notifyGoalReceived(

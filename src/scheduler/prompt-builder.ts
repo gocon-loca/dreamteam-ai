@@ -466,7 +466,7 @@ ${trimmed}`);
       const hasJinja = existsSync(join(projectConfig.path, 'templates')) ||
                        existsSync(join(projectConfig.path, 'app', 'templates'));
 
-      // Python + htmx/Jinja2 stack (e.g., voicenotes)
+      // Python + htmx/Jinja2 stack
       if (hasPyproject && (hasTemplates || hasJinja)) {
         sections.push(`## Stack Context: Python + htmx + Jinja2
 This project uses Python with htmx and Jinja2 templates — NOT React/Node.

@@ -171,7 +171,7 @@ export async function runPostCompletionHooks(
         trace.update({ statusMessage: 'rejected:test-commands' });
         trace.end();
 
-        // Notify Slack so founders can see what failed
+        // Notify Slack so reviewers can see what failed
         try { notifyTestCommandFailure(goal.project, goal.title, goalId, failureMsg); } catch (e) { log.swallow('slack-test-cmd-notify', e); }
 
         // Clean up worktree before returning
@@ -347,7 +347,7 @@ export async function runPostCompletionHooks(
         trace.update({ statusMessage: 'rejected:review-concern' });
         trace.end();
 
-        // Notify Slack so founders can see concerns and provide input
+        // Notify Slack so reviewers can see concerns and provide input
         try { notifyReviewConcern(goal.project, goal.title, goalId, reviewResult.feedback, reviewResult.issues); } catch (e) { log.swallow('slack-review-concern-notify', e); }
 
         return null;

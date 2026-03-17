@@ -78,3 +78,5 @@ config/product-briefs/
 config/projects.local.yaml
 # Project-specific e2e tests (generated per-project)
 tests/e2e/*/
+*.mjs
+.dreamteam/

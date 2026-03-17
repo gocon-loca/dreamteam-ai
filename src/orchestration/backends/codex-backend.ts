@@ -2,7 +2,7 @@
  * OpenAI Codex CLI Backend — Alternative execution backend for DreamTeam.
  *
  * Uses `codex exec` with JSONL output, supporting o3 and o4-mini models.
- * Installed at: /Users/remote/homebrew/bin/codex (v0.104.0)
+ * Set CODEX_PATH env var to override the default binary location.
  *
  * Key differences from Claude:
  * - Uses `codex exec` subcommand
@@ -34,7 +34,7 @@ const codexBackend: CliBackend = {
       if (path) return path;
     } catch { /* not in PATH */ }
 
-    return '/Users/remote/homebrew/bin/codex';
+    throw new Error('Codex CLI not found. Install it or set CODEX_PATH env var.');
   },
 
   buildArgs(opts: CliInvocationOptions): string[] {
