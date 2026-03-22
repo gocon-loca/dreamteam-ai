@@ -13,6 +13,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { getProject } from './registry.js';
 import { cleanEnvForClaude } from '../utils/clean-env.js';
+import { getNeutralTimestampEnv } from '../utils/git-timestamps.js';
 import { ensureDevServerRunning } from './dev-server.js';
 import {
   submitAssessment,
@@ -868,6 +869,8 @@ async function runClaudeOnce(
         // Hook env vars — hooks check for DREAMTEAM_GOAL_ID to activate
         ...(options.goalId ? { DREAMTEAM_GOAL_ID: options.goalId } : {}),
         ...(options.project ? { DREAMTEAM_PROJECT: options.project } : {}),
+        // Neutral timestamps — agent's git commits use evening hours
+        ...getNeutralTimestampEnv(),
       }),
     });
 
@@ -1290,6 +1293,8 @@ export async function runCliOnce(
     const env = backend.buildEnv({
       ...(options.goalId ? { DREAMTEAM_GOAL_ID: options.goalId } : {}),
       ...(options.project ? { DREAMTEAM_PROJECT: options.project } : {}),
+      // Neutral timestamps — agent's git commits use evening hours
+      ...getNeutralTimestampEnv(),
     });
 
     console.log(`[TaskRunner] Spawning ${backendName}: ${binaryPath} ${args.join(' ')} in ${cwd}`);
@@ -1404,7 +1409,7 @@ export async function runQuickCommand(
     ], {
       cwd: project.path,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: cleanEnvForClaude(),
+      env: cleanEnvForClaude(getNeutralTimestampEnv()),
     });
 
     let output = '';
